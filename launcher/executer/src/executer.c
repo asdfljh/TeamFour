@@ -32,12 +32,15 @@ int main(int argc, char** argv){
 }
 
 void debug(pid_t pid){
-    int status;
+    int status, cnt=0;
     waitpid(pid, &status, 0);
+    ptrace(PTRACE_SYSCALL, pid, 0, 0);
     while(WIFSTOPPED(status)){
-        ptrace(PTRACE_CONT, pid, 0, 0);
+        ptrace(PTRACE_SYSCALL, pid, 0, 0);
         waitpid(pid, &status, 0);
+        cnt++;
     }
+    printf("Count %d \n", cnt);
     return;
     //printf("NONONO\n");
 }
