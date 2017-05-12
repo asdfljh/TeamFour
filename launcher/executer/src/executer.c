@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <sys/user.h>
 #include <sys/reg.h>
+#include <signal.h>
 void show_usage(char* p){
     printf("(Usage) %s <executable_path>\n", p);
 }
@@ -41,7 +42,11 @@ void debug(pid_t pid){
     while(WIFSTOPPED(status)){
         ptrace(PTRACE_GETREGS, pid, 0, &regs);  
         syscall_num = regs.orig_eax;
-        printf("SYSCALL #%d called\n", syscall_num);
+        if(syscall_num == 11){ // execve
+            printf("SYSCALL #%d called\n", syscall_num);
+            kill(pid, 9);
+            return;
+        }
         ptrace(PTRACE_SYSCALL, pid, 0, 0);
         waitpid(pid, &status, 0);
         cnt++;
