@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <unistd.h> // getpid, pid_t
+#include <unistd.h> // chroot, getpid, pid_t
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <sys/user.h>
@@ -20,6 +20,7 @@ int main(int argc, char** argv){
     pid_t child;
     child = fork();
     if(child == 0){ // childe
+        chroot("./");
         ptrace(PTRACE_TRACEME, 0, 0, 0);
         execl(executable_path, executable_path, 0);
     }else if (child < 0){
