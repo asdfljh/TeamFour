@@ -45,9 +45,26 @@ void daemonize(void)
 	close(STDERR_FILENO);
 }
 
+void listen_client(){
+	FILE *fp;
+
+	fp = fopen ("notary.flag", "ab+");
+	if(fp == NULL){
+		perror("ERROR opening notary.flag");
+	}
+
+	sleep(1);
+	fprintf(fp, "Coucou");
+	fflush(fp);
+
+	fclose(fp);
+}
+
 int main(void)
 {
 	daemonize();
+
+	listen_client();	
 
 	return( EXIT_SUCCESS );
 }
