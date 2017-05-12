@@ -3,6 +3,7 @@
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <sys/user.h>
+#include <sys/reg.h>
 void show_usage(char* p){
     printf("(Usage) %s <executable_path>\n", p);
 }
@@ -33,10 +34,14 @@ int main(int argc, char** argv){
 }
 
 void debug(pid_t pid){
-    int status, cnt=0;
+    int syscall_num, status, cnt=0;
+    struct user_regs_struct regs;
     waitpid(pid, &status, 0);
     ptrace(PTRACE_SYSCALL, pid, 0, 0);
     while(WIFSTOPPED(status)){
+        ptrace(PTRACE_GETREGS, pid, 0, &regs);  
+        syscall_num = regs.orig_eax;
+        printf("SYSCALL #%d called\n", syscall_num);
         ptrace(PTRACE_SYSCALL, pid, 0, 0);
         waitpid(pid, &status, 0);
         cnt++;
