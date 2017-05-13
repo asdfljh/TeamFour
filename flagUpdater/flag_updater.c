@@ -40,9 +40,22 @@ void daemonize(void)
 		exit( EXIT_FAILURE );
 	}
 
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
+	//close(STDIN_FILENO);
+	//close(STDOUT_FILENO);
+	//close(STDERR_FILENO);
+}
+
+int verify_signature(char buf[BUFSIZE]){
+        FILE *fp;
+	fp = fopen("verif.flag", "w+");
+	fprintf(fp, "%s", buf);
+	
+        //TODO : treat the message that has been received : verify the PGP signature
+
+
+	fclose(fp); 
+        return 0;
+
 }
 
 void listen_client(){
@@ -118,9 +131,14 @@ void listen_client(){
 			perror("ERROR reading from socket");
 		printf("server received %d bytes: %s", n, buf);
 
-		fprintf(fp, "%s", buf);
-		fflush(fp);
-
+		if(verify_signature(buf) == -1){
+			//TODO : return than the signature isn't correct
+		}else{
+			//TODO : updates the content of the file 
+			fprintf(fp, "%s", buf);
+                	fflush(fp);
+		}
+			
 		close(childfd);
 	}
 }
