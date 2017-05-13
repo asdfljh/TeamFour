@@ -40,21 +40,67 @@ void daemonize(void)
 		exit( EXIT_FAILURE );
 	}
 
-	//close(STDIN_FILENO);
-	//close(STDOUT_FILENO);
-	//close(STDERR_FILENO);
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
 }
 
 int verify_signature(char buf[BUFSIZE]){
-        FILE *fp;
-	fp = fopen("verif.flag", "w+");
+	FILE *fp, *sed;
+	char path[PATH_MAX];
+	char new_buf[BUFSIZE];
+	int disc = 10;
+
+	/* Test */
+	buf = "{\n  \" signer \" : \"TA ’ s ID \" ,\n  \"newflag\": \"1234567890 ABCDEF \" ,\n  \" signature \" : \"zdjchnuydyziybctu2657BKKJJH\"\n}";
+
+	/* Extract the signature of the json file */
+
+	const char s[2] = "\"";
+	char *token;
+	char signature[100];
+        char githubID[100];
+	char carac;
+	char line[100];
+	int i = 0;
+
+	fp = fopen("/var/ctf/verif.flag", "w+");
 	fprintf(fp, "%s", buf);
+	fclose(fp);
+
+	sed = fopen("/var/ctf/verif.flag", "r");
+
+        while (fgets(line, sizeof(line), sed) != NULL){
+                if(line != "\n"){
+                        line[strlen(line) - 1] = '\0';
+
+                        char *data = strdup(line);
+
+                        token = strtok(data, s);
+                        while( token != NULL ){
+				i++;
+				if(i == 5){
+				        strcpy(githubID, token);
+                                }
+
+				if(i == 15){
+					strcpy(signature, token);	
+				}
+                                token = strtok(NULL, s);
+                        }
+                }
+        }
+
+        fclose(sed);
+
+	printf("Github ID : %s\n", githubID);
+	printf("Signature : %s\n", signature);
 	
-        //TODO : treat the message that has been received : verify the PGP signature
+	/* Verify the signature */
 
+	//TODO : treat the message that has been received : verify the PGP signature
 
-	fclose(fp); 
-        return 0;
+	return 0;
 
 }
 
@@ -72,12 +118,10 @@ void listen_client(){
 	int n; /* message byte size */
 	int portno = 4200;
 
-
 	fp = fopen ("notary.flag", "w+");
 	if(fp == NULL){
 		perror("ERROR opening notary.flag");
 	}
-
 
 	// Create the parent socket 
 	parentfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -136,9 +180,9 @@ void listen_client(){
 		}else{
 			//TODO : updates the content of the file 
 			fprintf(fp, "%s", buf);
-                	fflush(fp);
+			fflush(fp);
 		}
-			
+
 		close(childfd);
 	}
 }
