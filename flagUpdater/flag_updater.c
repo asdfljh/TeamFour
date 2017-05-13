@@ -40,9 +40,9 @@ void daemonize(void)
 		exit( EXIT_FAILURE );
 	}
 
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
+	//close(STDIN_FILENO);
+	//close(STDOUT_FILENO);
+	//close(STDERR_FILENO);
 }
 
 int verify_signature(char buf[BUFSIZE]){
@@ -51,15 +51,13 @@ int verify_signature(char buf[BUFSIZE]){
 	char new_buf[BUFSIZE];
 	int disc = 10;
 
-	/* Test */
-	buf = "{\n  \" signer \" : \"TA ’ s ID \" ,\n  \"newflag\": \"1234567890 ABCDEF \" ,\n  \" signature \" : \"zdjchnuydyziybctu2657BKKJJH\"\n}";
-
-	/* Extract the signature of the json file */
+	/* Extract data from the json file */
 
 	const char s[2] = "\"";
 	char *token;
 	char signature[100];
         char githubID[100];
+        char newflag[100];
 	char carac;
 	char line[100];
 	int i = 0;
@@ -82,7 +80,9 @@ int verify_signature(char buf[BUFSIZE]){
 				if(i == 5){
 				        strcpy(githubID, token);
                                 }
-
+				if(i == 10){
+                                        strcpy(newflag, token);
+                                }
 				if(i == 15){
 					strcpy(signature, token);	
 				}
@@ -95,10 +95,19 @@ int verify_signature(char buf[BUFSIZE]){
 
 	printf("Github ID : %s\n", githubID);
 	printf("Signature : %s\n", signature);
-	
+        printf("New Flag : %s\n", newflag);
+
 	/* Verify the signature */
 
-	//TODO : treat the message that has been received : verify the PGP signature
+	char check_signature[100];
+
+	strcpy(check_signature, githubID);
+	strcat(check_signature, ":");
+	strcat(check_signature, newflag);
+
+	puts(check_signature);
+
+	//TODO : Sign the string with the PGP key of the id
 
 	return 0;
 
@@ -118,7 +127,7 @@ void listen_client(){
 	int n; /* message byte size */
 	int portno = 4200;
 
-	fp = fopen ("notary.flag", "w+");
+	fp = fopen ("/var/ctf/notary.flag", "w+");
 	if(fp == NULL){
 		perror("ERROR opening notary.flag");
 	}
@@ -175,14 +184,20 @@ void listen_client(){
 			perror("ERROR reading from socket");
 		printf("server received %d bytes: %s", n, buf);
 
-		if(verify_signature(buf) == -1){
-			//TODO : return than the signature isn't correct
-		}else{
-			//TODO : updates the content of the file 
-			fprintf(fp, "%s", buf);
-			fflush(fp);
-		}
+		/* Test */
+        	strcpy(buf, "{\n \"signer\" : \"TAsID\",\n  \"newflag\": \"1234567890ABCDEF\",\n  \"signature\" : \"zdjchnuydyziybctu2657BKKJJH\"\n}");
 
+		if(verify_signature(buf) == -1){
+			perror("The signature of the file isn't good\n");
+		}else{
+			//Updates the content of the file
+			fp = fopen ("/var/ctf/notary.flag", "w+");
+	        	if(fp == NULL){
+                		perror("ERROR opening notary.flag");
+        		}
+			fprintf(fp, "%s", buf);
+			fclose(fp);
+		}
 		close(childfd);
 	}
 }
@@ -190,9 +205,7 @@ void listen_client(){
 int main(void)
 {
 	daemonize();
-
 	listen_client();	
-
 	return( EXIT_SUCCESS );
 }
 
