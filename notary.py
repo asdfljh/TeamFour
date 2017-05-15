@@ -1,6 +1,7 @@
 import gnupg
 import os
 import sys
+import socket
 import logging
 from pprint import pprint
 def import_keys(argv):
@@ -20,9 +21,19 @@ def import_keys(argv):
 				sys.exit(1)
 	#pprint (gpg.list_keys())
 def init_server():
+	s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	s.bind(("",8000))
+	s.listen(7)
+	print "Listening..."
+	connect, address = s.accept()
 	return
 	
-def get_files():			
+def get_files():
+	print 'Connect from', address
+	t = connect.recv(1024)
+	while (1):
+		f.write(1)
+		t= connect.recv(1024)
 	return
 	
 def verify(file_stream,sock):
