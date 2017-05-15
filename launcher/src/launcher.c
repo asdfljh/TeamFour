@@ -8,10 +8,11 @@
 #define PORT_NUMBER 8001
 #define BUF_SIZE 65536
 
+int port_bind(char* launcher_ip);
+
 uint32_t change_endian(uint32_t src);
 int check_ip_arg(char* start_ip, char* end_ip);
-
-int port_bind(char* launcher_ip);
+int check_range(char* start_ip, char* end_ip, char* object_ip);
 
 int main(int argc, char** argv) {
 	int r;
@@ -44,6 +45,12 @@ int main(int argc, char** argv) {
 		if (client_socket == -1) {
 			fprintf(stderr, "accept() error\n");
 			exit(1);
+		}
+
+		if (check_range(argv[2], argv[3], inet_ntoa(client_address.sin_addr)) == -1) {
+			fprintf(stderr, "range error\n");
+			close(client_socket);
+			continue;
 		}
 
 		printf("Hello %s\n", inet_ntoa(client_address.sin_addr));
@@ -126,4 +133,14 @@ int check_ip_arg(char* start_ip, char* end_ip) {
 	return -1;
 }
 
+int check_range(char* start_ip, char* end_ip, char* object_ip) {
+	uint32_t start = change_endian(inet_addr(start_ip));
+	uint32_t end = change_endian(inet_addr(end_ip));
+	uint32_t object = change_endian(inet_addr(object_ip));
 
+	if (object >= start && object <= end) {
+		return 0;
+	}
+
+	return -1;
+}
