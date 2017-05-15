@@ -18,6 +18,7 @@ int check_range(char* start_ip, char* end_ip, char* object_ip);
 
 int jsonParse(char* filePath, char* jsonContents);
 int jsoneq(const char *json, jsmntok_t *tok, const char *s);
+void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents);
 
 int main(int argc, char** argv) {
 	int r;
@@ -59,7 +60,7 @@ int main(int argc, char** argv) {
 			continue;
 		}
 
-		printf("Hello %s\n", inet_ntoa(client_address.sin_addr));
+		printf("DEBUG] Hello %s\n", inet_ntoa(client_address.sin_addr));
 
 		while(1) {
 			memset(buffer, 0, BUF_SIZE);
@@ -71,10 +72,10 @@ int main(int argc, char** argv) {
 				break;
 			}
 
-			printf("%s, %d\n", buffer, r);
+			printf("DEBUG] %s\n", buffer);
 
 			if (jsonParse(filePath, buffer) == 0) {
-				printf("Client: %s\n", filePath);
+				printf("DEBUG] Client: %s\n", filePath);
 			}
 
 		}
@@ -174,8 +175,6 @@ int jsonParse(char* filePath, char* jsonContents) {
 	size_t bodySize = 0;
 	size_t fileSize = 0;
 
-	printf("get: %s\n", jsonContents);
-
 	jsmn_init(&p);
 	r = jsmn_parse(&p, jsonContents, strlen(jsonContents), t, sizeof(t)/sizeof(t[0]));
 	if (r < 0) {
@@ -194,17 +193,18 @@ int jsonParse(char* filePath, char* jsonContents) {
 			nameContents = (char*)malloc(nameSize*sizeof(char));
 			memcpy(nameContents, jsonContents + t[i+1].start, nameSize - 1);
 			nameContents[nameSize] = '\0';
-			printf("name: %s\n", nameContents);
+			printf("DEBUG] name: %s\n", nameContents);
 		} else if  (jsoneq(jsonContents, &t[i], "body") == 0) {
 			bodySize = t[i+1].end - t[i+1].start + 1;
 			bodyContents = (char*)malloc(bodySize*sizeof(char));
 			memcpy(bodyContents, jsonContents + t[i+1].start, bodySize - 1);
 			bodyContents[bodySize] = '\0';
-			printf("body: %s\n", bodyContents);
+			printf("DEBUG] body: %s\n", bodyContents);
 		}
 	}
 
 	fileContents = base64_decode(bodyContents, bodySize - 1, &fileSize);
+	makeFile(filePath, nameContents, fileSize, fileContents);
 
 	free(nameContents);
 	free(bodyContents);
@@ -212,3 +212,16 @@ int jsonParse(char* filePath, char* jsonContents) {
 	return 0;
 }
 
+void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents) {
+	FILE* fp;
+
+	strcpy(filePath, "$HOME/IS521/");
+	strcat(filePath, nameContents);
+	strcat(filePath, ".txt");
+
+	fp = fopen(filePath, "w");
+
+	fwrite(fileContents, 1, fileSize, fp);
+
+	fclose(fp);
+}
