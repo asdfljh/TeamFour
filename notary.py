@@ -17,7 +17,7 @@ def import_keys(argv):
 				gpg.import_keys(key_data)
 			except IOError:
 				log_all("file_error")
-				print 'No such file or directory, usage : python notary.py <Key directory> + \'/\''		
+				print "No such file or directory, usage : python notary.py <Key directory>"
 				sys.exit(1)
 	#pprint (gpg.list_keys())
 def init_server():
@@ -25,16 +25,18 @@ def init_server():
 	s.bind(("",8000))
 	s.listen(7)
 	print "Listening..."
-	connect, address = s.accept()
-	return
+	return s
 	
-def get_files():
+def get_files(s):
+	connect, address = s.accept()
+	f = open('temp','wb')  
 	print 'Connect from', address
 	t = connect.recv(1024)
-	while (1):
-		f.write(1)
+	while (t):
+		f.write(t)
 		t= connect.recv(1024)
-	return
+	f.close()
+	return f
 	
 def verify(file_stream,sock):
 	verified = gpg.verify_file(stream)
@@ -47,7 +49,7 @@ def log_all(error_string):
 	return
 	
 def send_file_with_sign(s_sock, s_file, s_sign):
-	signed_file = gpg.sign_file(s_file)
+	signed_file = gpg.sign_file(s_file) #gpg is not global
 	stream = s_file.read(1024)
 	while stream:		
 		s_sock.send(stream)
@@ -58,10 +60,10 @@ def send_file_with_sign(s_sock, s_file, s_sign):
 	
 def main(argv):
 	import_keys(argv[1]) 
-	#sock = init_server()	  # get a sock object
-	#file = get_files()	
-	if (verifiy(file,sock))
-		send_sign_with_file (sock, file, sign)	
+	sock = init_server()	  # get a sock object
+	f = get_files(sock)
+	if verify(f,sock):
+		send_sign_with_file (sock, f, sign)	
 	
 if __name__ == "__main__":
     main(sys.argv)
