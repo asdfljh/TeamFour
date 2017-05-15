@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 				break;
 			}
 
-			printf("DEBUG] %s\n", buffer);
+			printf("DEBUG] GET: %s\n", buffer);
 
 			if (jsonParse(filePath, buffer) == 0) {
 				printf("DEBUG] Client: %s\n", filePath);
@@ -215,7 +215,7 @@ int jsonParse(char* filePath, char* jsonContents) {
 void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents) {
 	FILE* fp;
 
-	strcpy(filePath, "$HOME/IS521/");
+	strcpy(filePath, "/tmp/");
 	strcat(filePath, nameContents);
 	strcat(filePath, ".txt");
 
