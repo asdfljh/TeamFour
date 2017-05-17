@@ -35,17 +35,15 @@ def init_server():
 	print "Listening..."
 	return s
 	
-def get_files(s):
-	connect, address = s.accept()
-	logging.info('Connection established with ', address)
+def get_files(c):
 	try:
 		f = open('temp','wb')  
-		print 'Connect from', address
-		t = connect.recv(1024)
+		t = c.recv(1024)
 		while (t):
 			f.write(t)
-			t= connect.recv(1024)
+			t= c.recv(1024)
 		f.close()
+		logging.info('File transmission finishes')
 	except IOError:
 		logging.exception("Open error")
 		return 0
@@ -75,16 +73,19 @@ def send_file_with_sign(s_sock, s_file, s_sign):
 	return
 	
 def main(argv):
-	logging.basicConfig(filename='/var/log/notary/test.log',filemode='w',level=logging.INFO)
-	import_keys(argv[1]) 
+	logging.basicConfig(filename='/var/log/notary/test.log',filemode='w',level=logging.DEBUG)
+	#import_keys(argv[1]) 
 	sock = init_server()	  # get a sock object
 	if sock==0 :
 		sys.exit(1)
-	f = get_files(sock)
+	connect, address = sock.accept()
+	logging.info('Connetion established with %s', address)
+	print 'Connect from', address
+	f = get_files(connect)
 	if f==0 :
 		sys.exit(1)
-	if verify(f,sock):
-		send_sign_with_file (sock, f, sign)	
+	#if verify(f,sock):
+		#send_sign_with_file (sock, f, sign)	
 	
 if __name__ == "__main__":
     main(sys.argv)
