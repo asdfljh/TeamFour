@@ -16,26 +16,42 @@ def import_keys(argv):
 				key_data = open(KEYPATH + filename).read()
 				gpg.import_keys(key_data)
 			except IOError:
-				log_all("file_error")
+				logging.exception("file_error")
 				print "No such file or directory, usage : python notary.py <Key directory>"
 				sys.exit(1)
 	#pprint (gpg.list_keys())
 def init_server():
-	s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	s.bind(("",8000))
+	try:
+		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	except socket.error, e:
+		logging.exception("Socket error")
+		return 0
+	try:
+		s.bind(("",8000))
+	except socket.error, e:
+		logging.exception("Bind error")
+		return 0;
 	s.listen(7)
 	print "Listening..."
 	return s
 	
 def get_files(s):
 	connect, address = s.accept()
-	f = open('temp','wb')  
-	print 'Connect from', address
-	t = connect.recv(1024)
-	while (t):
-		f.write(t)
-		t= connect.recv(1024)
-	f.close()
+	logging.info('Connection established with ', address)
+	try:
+		f = open('temp','wb')  
+		print 'Connect from', address
+		t = connect.recv(1024)
+		while (t):
+			f.write(t)
+			t= connect.recv(1024)
+		f.close()
+	except IOError:
+		logging.exception("Open error")
+		return 0
+	except:
+		logging.exception("Unexpected error")
+		return 0
 	return f
 	
 def verify(file_stream,sock):
@@ -59,9 +75,14 @@ def send_file_with_sign(s_sock, s_file, s_sign):
 	return
 	
 def main(argv):
+	logging.basicConfig(filename='/var/log/notary/test.log',filemode='w',level=logging.INFO)
 	import_keys(argv[1]) 
 	sock = init_server()	  # get a sock object
+	if sock==0 :
+		sys.exit(1)
 	f = get_files(sock)
+	if f==0 :
+		sys.exit(1)
 	if verify(f,sock):
 		send_sign_with_file (sock, f, sign)	
 	
