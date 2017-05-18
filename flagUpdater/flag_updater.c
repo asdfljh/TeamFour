@@ -9,6 +9,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <gpgme.h>
+#include <locale.h> 
+#include <errno.h>
 
 char* PATH_FLAG = "/var/ctf/";
 int PATH_MAX = 1024;
@@ -34,12 +37,6 @@ void daemonize(void)
 		exit( EXIT_FAILURE );
 	}
 
-	if(chdir(PATH_FLAG) < 0)
-	{
-		perror("daemonize::chdir");
-		exit( EXIT_FAILURE );
-	}
-
 	//close(STDIN_FILENO);
 	//close(STDOUT_FILENO);
 	//close(STDERR_FILENO);
@@ -51,51 +48,64 @@ int verify_signature(char buf[BUFSIZE]){
 	char new_buf[BUFSIZE];
 	int disc = 10;
 
-	/* Extract data from the json file */
+	// Import GPG Keys
+	fp = popen("gpg --import gpg_public_key/*.pub", "r"); //import all public keys
+        fgets(path, PATH_MAX, fp);
+        pclose(fp);
+
+	// GPG Decryption
+	
+	//TODO : handle the problem brought by the miss of the caracter "^@" in buf...
+
+	fp = fopen("encrypt.c.gpg", "w+");
+        fprintf(fp, "%s", buf);
+        fclose(fp);
+
+	fp = popen(" gpg --decrypt test/test.c.gpg > verif.flag", "r"); //decrypt the file / TODO : change test/test.c.gpg by encrypt.c.gpg 
+        fgets(path, PATH_MAX, fp);
+        pclose(fp);
+	
+	// Extract data from the json file (decrypt.flag)
 
 	const char s[2] = "\"";
 	char *token;
 	char signature[100];
-        char githubID[100];
-        char newflag[100];
+	char githubID[100];
+	char newflag[100];
 	char carac;
 	char line[100];
 	int i = 0;
 
-	fp = fopen("/var/ctf/verif.flag", "w+");
-	fprintf(fp, "%s", buf);
-	fclose(fp);
+	sed = fopen("verif.flag", "r");
 
-	sed = fopen("/var/ctf/verif.flag", "r");
+	while (fgets(line, sizeof(line), sed) != NULL){
+		if(line != "\n"){
+			line[strlen(line) - 1] = '\0';
 
-        while (fgets(line, sizeof(line), sed) != NULL){
-                if(line != "\n"){
-                        line[strlen(line) - 1] = '\0';
+			char *data = strdup(line);
 
-                        char *data = strdup(line);
-
-                        token = strtok(data, s);
-                        while( token != NULL ){
+			token = strtok(data, s);
+			while( token != NULL ){
 				i++;
 				if(i == 5){
-				        strcpy(githubID, token);
-                                }
+					strcpy(githubID, token);
+				}
 				if(i == 10){
-                                        strcpy(newflag, token);
-                                }
+					strcpy(newflag, token);
+				}
 				if(i == 15){
 					strcpy(signature, token);	
 				}
-                                token = strtok(NULL, s);
-                        }
-                }
-        }
+				token = strtok(NULL, s);
+			}
+		}
+	}
 
-        fclose(sed);
+	fclose(sed);
 
 	printf("Github ID : %s\n", githubID);
 	printf("Signature : %s\n", signature);
-        printf("New Flag : %s\n", newflag);
+	printf("New Flag : %s\n", newflag);
 
 	/* Verify the signature */
 
@@ -126,11 +136,7 @@ void listen_client(){
 	int optval; /* flag value for setsockopt */
 	int n; /* message byte size */
 	int portno = 4200;
-
-	fp = fopen ("/var/ctf/notary.flag", "w+");
-	if(fp == NULL){
-		perror("ERROR opening notary.flag");
-	}
+        char path[PATH_MAX];
 
 	// Create the parent socket 
 	parentfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -184,19 +190,13 @@ void listen_client(){
 			perror("ERROR reading from socket");
 		printf("server received %d bytes: %s", n, buf);
 
-		/* Test */
-        	strcpy(buf, "{\n \"signer\" : \"TAsID\",\n  \"newflag\": \"1234567890ABCDEF\",\n  \"signature\" : \"zdjchnuydyziybctu2657BKKJJH\"\n}");
-
 		if(verify_signature(buf) == -1){
 			perror("The signature of the file isn't good\n");
 		}else{
 			//Updates the content of the file
-			fp = fopen ("/var/ctf/notary.flag", "w+");
-	        	if(fp == NULL){
-                		perror("ERROR opening notary.flag");
-        		}
-			fprintf(fp, "%s", buf);
-			fclose(fp);
+			fp = popen("mv verif.flag /var/ctf/; cp /var/ctf/verif.flag /var/ctf/notary.flag", "r");
+			fgets(path, PATH_MAX, fp);
+        		pclose(fp);
 		}
 		close(childfd);
 	}
