@@ -4,7 +4,9 @@ import os
 import sys
 import socket
 import logging
+import logging.handlers
 import base64
+import struct
 
 def import_keys(argv):
 	KEYPATH = argv	
@@ -18,7 +20,6 @@ def import_keys(argv):
 		 .pub is public key, and .key is secret key
 		 Please be aware if you import secret key first,
 		 you should type passphrase of notary key.
-		 If you want to get it, Please inquire to KAISTGUN
 		'''
 		
 		if ext == '.pub' or ext == '.key': 
@@ -27,7 +28,7 @@ def import_keys(argv):
 				gpg.import_keys(key_data)
 			except IOError:
 				logging.exception("file_error")
-				print "No such file or directory, usage : python notary.py <Key directory>"
+				print ("No such file or directory, usage : python notary.py <Key directory>")
 				sys.exit(1)
 	return gpg
 
@@ -35,7 +36,7 @@ def init_server():
 
 	try:
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	except socket.error, e:
+	except (socket.error, e):
 		logging.exception("Socket error")
 		return -1
 		
@@ -46,63 +47,84 @@ def init_server():
 		return -1;
 	
 	return s
-	
-def get_files(c,sock):	
+
+def get_files(conn):
+
 	try:
-		f = open('temp','wb')  		
-		#while (t):
-		t = c.recv(1024)
-		f.write(t)
-		#	t= c.recv(1024)		
+		logging.info('Receiving File..')		
+		recv_file = open('temp','wb')		
+		filesize = struct.unpack("<Q", conn.recv(8))[0]		
+		
+		
+		while (filesize > 0 ):
+			if(filesize  < 1025):
+				chunk = conn.recv(filesize)
+				recv_file.write(chunk)
+				break
+			chunk = conn.recv(1024)	
+			recv_file.write(chunk)
+			filesize -= 1024
+		
 		logging.info('File transmission finished')
+
 	except IOError:
 		logging.exception("Open error")		
-		sock.close()
-		f = -1
+		return -1
+
 	except:
-		logging.exception("Unexpected error, file transmission failed")
-		sock.close()		
-		f = -1
-	f.close()
-	return f
+		logging.exception("Unexpected error, file transmission failed")		
+		return -1
+
+	recv_file.close()
+	return 1
 	
-def verify(sock,gpg):
-	f = open('temp','rb')	
-	verified = gpg.verify_file(f)
+def verify(gpg,conn):
+	file_verify = open('temp','rb')	
+	verified = gpg.verify_file(file_verify)
 	Success = -1
 	
 	if not verified:
 		#raise ValueError("Signature could not be verified!")		
-		sock.close()
+		#	sock.close()
+		conn.send("XXXXX")
+		file_verify.close()
+		Success = -1
 	else:
+		conn.send("YYYYY")
 		Success = 1
-	f.close()
+
+	file_verify.close()
 	return Success
 	
 	
-def send_file_with_sign(s_sock, gpg):
-	s_file = open('temp','rb') 
-	signed_file = gpg.sign_file(s_file) #gpg is not global
-	stream = s_file.read(1024)
+def send_file_with_sign(c, gpg):
+
+	s_file = open('temp') 
+	sign = gpg.sign_file(s_file,passphrase = "notary897",output = "temp.gpg")	
+
+	sign_file = open('temp.gpg') # Signed file
+	filesize = struct.pack("<Q", os.path.getsize('temp.gpg'))
+	c.send(filesize)   # Send File size
+
 	Success = -1
-	
+	stream = 1
+
 	try:
-		while stream:		
-			s_sock.send(stream)
-			stream = s_file.read(1024)
+		while stream:
+			stream = sign_file.read(1024)
+			c.send(stream)
 			
 	except:
 		logging.exception("Unexpected error, file transmission failed")
-		s_sock.close()
 		return Success
 		
 	#s_sock.send("Your file with sign has been successfully transfered!")
-	s_sock.close()
+	#s_sock.close()
 	Success = 1
 	
 	return Success
 	
-def send_executable(s_file,IP):	
+def send_executable(s_file,IP):
 
 	Host = 1     # Designated local host
 	Port = 8001
@@ -112,6 +134,7 @@ def send_executable(s_file,IP):
 		return -1		
 	# Get the time
 	timestring = time.ctime(time.time())
+
 	'''
 	Please Following JSON format
 		\begin{lstlisting}
@@ -121,6 +144,7 @@ def send_executable(s_file,IP):
 	}
 		\end{lstlisting}
 	'''	
+
 	NAME = "FROM_"+timestring+"IP_"+IP	
 	file_b64encode = base64.b64encode(s_file.read())
 	TEXT = "{\n\"name\": \"" + NAME + "\",\n\"body\": \"" + file_b64encode + "\"\n}"
@@ -129,14 +153,17 @@ def send_executable(s_file,IP):
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		s.connect((host, port))
 		
-	except socket.error, e:
+	except (socket.error, e):
 		logging.exception("Socket error")
 		return -1	
 	
 	f = open(NAME,'wb')
 	f.write(TEXT)
-	stream = f.read(1024)
 	
+	filesize = struct.pack("<Q", os.path.getsize(NAME))
+	s.send(filesize)   # Send File size	
+	
+	stream = 1	
 	try:
 		while stream:		
 			s.send(stream)
@@ -144,45 +171,67 @@ def send_executable(s_file,IP):
 	except:
 		logging.exception("Unexpected error, file transmission failed")
 		return -1
-		
-	s.send("Your file with sign has been successfully transfered!")
-	s_sock.close()	
+	
 	
 	return 1
-	
-def main(argv):
-	# We will run this program with sudo command.	
+
+def loggingconfig():
+
+	# Initiate Logging handler
 	logging.basicConfig(filename='/var/log/notary/test.log',filemode='w',level=logging.DEBUG)
 	
+	console = logging.StreamHandler()
+	console.setLevel(logging.ERROR)
+	
+	# set a format which is simpler for console use
+	formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+	console.setFormatter(formatter)
+	# add the handler to the root logger
+	logging.getLogger('').addHandler(console)
+	logger = logging.getLogger(__name__)
+	# Initiate FileHandler and Streamhandler
+	fileHandler = logging.FileHandler('/var/log/notary/test.log')
+	streamHandler = logging.StreamHandler()
+
+
+def main(argv):
+	# We will run this program with sudo command.	
+	loggingconfig()
+	#logging.basicConfig(filename='/var/log/notary/test.log',filemode='w',level=logging.DEBUG)
+	#logging.basicConfig(level=logging.DEBUG)
 	gpg = import_keys(argv[1]) 			
 		
-	while True:
-		sock = init_server()
-		
-		if sock == -1 : 	  # get a sock object
-			logging.error('Cannot init server')
-			sys.exit(1)
-			
+	
+	sock = init_server()
+	print ('Initiating Server...')
+	if sock == -1 : 	  # get a sock object
+		logging.error('Cannot init server')
+		sys.exit(1)
+
+	while True:		
 		sock.listen(1)
-		print 'Server is Listening...'
+		print ('Server is Listening...')
+
 		connect, address = sock.accept()	
 		logging.info('Connetion established with %s', address)
-		print 'Connect from', address
+		print ('Connect from', address)
 		
-		f = get_files(connect,sock)
+		f = get_files(connect)
 		
 		if f < 0 :
 			continue
-		print 'Get a file'
+		print ('Get a file')
 		
-		if verify(sock,gpg) < 0:
+		if verify(gpg,connect) < 0:
 			continue
-		print 'Done verify'
-		if send_file_with_sign(sock, gpg) < 0:
+		print ('Done verify')
+
+		if send_file_with_sign(connect, gpg) < 0:
 			continue
-		print 'Sign and Send'
+		print ('Sign and Send')
+
 		#if file_is_executable(f,address) < 0:
-		#	continue
+		# We don't need to make this module. 
 			
 	
 if __name__ == "__main__":
