@@ -9,7 +9,7 @@ def send(argv):
 	filename = argv
 	filesize = struct.pack("<Q", os.path.getsize(argv))	
 	
-	s.connect(("localhost",port))
+	s.connect(("143.248.6.229",port))
 	f=open(argv,'rb')  	
 #	print 'sending filesize..'
 	s.send(filesize)	
