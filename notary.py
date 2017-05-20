@@ -7,6 +7,9 @@ import logging
 import logging.handlers
 import base64
 import struct
+import random
+import cPickle
+from pprint import pprint
 
 def import_keys(argv):
 	KEYPATH = argv	
@@ -193,6 +196,56 @@ def loggingconfig():
 	fileHandler = logging.FileHandler('/var/log/notary/test.log')
 	streamHandler = logging.StreamHandler()
 
+def authuser(c,path):
+	c.send('Send your github ID')
+	gitid = c.recv(256) # github ID might be shorter than 256 bits	
+	gitname = gitid + ".pub"
+	gpgauth = gnupg.GPG() #important thing is key order
+	filenames = os.listdir(path)
+	if gitname in filenames:
+		for filename in filenames:
+			if gitname == filename : 
+				key_data1 = open(path+gitname).read()
+				import_result = gpgauth.import_keys(key_data1)
+				public = import_result.fingerprints[0].encode('ascii')
+			if filename == "notary.key" :
+				key_data2 = open(path+filename).read()
+				import_result = gpgauth.import_keys(key_data2)		
+				private = import_result.fingerprints[0].encode('ascii')
+	else :
+		print ("There is no key for such id")
+		return -1
+
+	number = random.getrandbits(512)
+	encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "notary897")
+	#to_send = struct.pack('>Q',len(encrypted_data)) + encrypted_data
+	c.sendall(str(encrypted_data))
+	authrandom = c.recv(2048)
+
+	if not authrandom :
+		print "check"
+		return -1
+	
+	print ("Received encrypted randomnumber")
+	
+	key_data2 = open(path+filename).read()
+	import_result = gpgauth.import_keys(key_data2)
+	verified = gpgauth.decrypt(authrandom, passphrase="notary897")
+	
+	if not verified.ok :
+		print(verified.status)
+		return -1
+	if str(verified) == str(number) :
+		return 0
+	else :
+	 	print("Random number isn't same")
+	 	return -1
+
+
+def errorInConnect(c,comment):
+	logging.info('%s', comment)
+	c.close()
+
 
 def main(argv):
 	# We will run this program with sudo command.	
@@ -215,18 +268,27 @@ def main(argv):
 		connect, address = sock.accept()	
 		logging.info('Connetion established with %s', address)
 		print ('Connect from', address)
+		auth = authuser(connect,argv[1])
 		
+		if auth < 0 :
+			errorInConnect(connect,'Authenticaion fail')
+			continue
+		print ('Auth success')
+	
 		f = get_files(connect)
 		
 		if f < 0 :
+			errorInConnect(connect,'Get File error')
 			continue
 		print ('Get a file')
 		
 		if verify(gpg,connect) < 0:
+			errorInConnect(connect,'Verify error')
 			continue
 		print ('Done verify')
 
 		if send_file_with_sign(connect, gpg) < 0:
+			errorInConnect(connect,'Send file with sign error')
 			continue
 		print ('Sign and Send')
 

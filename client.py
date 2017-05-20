@@ -3,6 +3,8 @@ import sys
 import os
 import time
 import struct
+
+
 def send(argv):
 	s= socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 	port = 8000
@@ -25,7 +27,8 @@ def send(argv):
 	print 'Done sending'
 	print 'Waiting the file'
 	return s
-	
+
+
 def recv(s):
 	
 	filename = sys.argv[1] + '.gpg'
