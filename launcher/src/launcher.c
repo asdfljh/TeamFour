@@ -26,6 +26,8 @@ int jsoneq(const char *json, jsmntok_t *tok, const char *s);
 void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents);
 
 int verify(char* base64_output);
+
+int executeFile(char* filePath);
 void debug(pid_t pid);
 
 int main(int argc, char** argv) {
@@ -297,6 +299,24 @@ int verify(char* base64_output){
 	}
 	pclose(fp);
 
+	executeFile(exe_output);
+
+	return 0;
+}
+
+int executeFile(char* filePath) {
+	pid_t child;
+	child = fork();
+	if(child == 0){ // childe
+		chroot("./");
+		ptrace(PTRACE_TRACEME, 0, 0, 0);
+		execl(filePath, filePath, 0);
+	}else if (child < 0){
+		perror("fork");
+	}else{ // parent
+		debug(child);
+	}
+
 	return 0;
 }
 
@@ -324,4 +344,3 @@ void debug(pid_t pid) {
 	return;
 	//printf("NONONO\n");
 }
-
