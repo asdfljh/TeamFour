@@ -4,6 +4,11 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <sys/user.h>
+#include <sys/reg.h>
+#include <signal.h>
 #include "jsmn.h"
 
 #define PORT_NUMBER 8001
@@ -19,6 +24,8 @@ int check_range(char* start_ip, char* end_ip, char* object_ip);
 int jsonParse(char* filePath, char* jsonContents);
 int jsoneq(const char *json, jsmntok_t *tok, const char *s);
 void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents);
+
+int verify(char* base64_output);
 
 int main(int argc, char** argv) {
 	int r;
@@ -204,9 +211,9 @@ int jsonParse(char* filePath, char* jsonContents) {
 	}
 
 	makeFile(filePath, nameContents, bodySize-1, bodyContents);
-
-//	fileContents = base64_decode(bodyContents, bodySize - 1, &fileSize);
-//	makeFile(filePath, nameContents, fileSize, fileContents);
+	verify(filePath);
+	//	fileContents = base64_decode(bodyContents, bodySize - 1, &fileSize);
+	//	makeFile(filePath, nameContents, fileSize, fileContents);
 
 	free(nameContents);
 	free(bodyContents);
@@ -226,3 +233,69 @@ void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char
 
 	fclose(fp);
 }
+
+int verify(char* base64_output){
+	char cmdline[150];
+	char gpg_output[100];
+	char exe_output[100];
+	char buff[1024];
+	FILE *fp;
+
+	strcpy(gpg_output, base64_output);
+	strcat(gpg_output, ".gpg");
+
+	memset(cmdline, 0, sizeof(cmdline));
+	sprintf(cmdline, "base64 --decode %s > %s", base64_output, gpg_output);
+	printf("%s\n", cmdline);
+	fp = popen(cmdline, "r");
+	if(fp == NULL) { // ERROR
+		perror("base64 error");
+		pclose(fp);
+		return -1;
+	}
+	pclose(fp);
+
+	strcpy(exe_output, base64_output);
+	strcat(exe_output, ".exe");
+
+	memset(cmdline, 0, sizeof(cmdline));
+	sprintf(cmdline, "gpg --output %s --decrypt %s 2>&1", exe_output, gpg_output);
+	printf("%s\n", cmdline);
+	fp = popen(cmdline, "r");
+	if(fp == NULL) { // ERROR
+		perror("gpg error");
+		pclose(fp);
+		return -1;
+	}
+
+	/*
+	   int idx = 0;
+	   char* good = "gpg: Good signature from \"IS521_notary <IS521_notary@kaist.ac.kr>\"";
+	   while(fgets(buff, sizeof(buff), fp) != NULL){
+	   if(idx++ == 1){
+	   int i;
+	   for(i = 0 ; i < strlen(good) ; i++){
+	   if(buff[i] != good[i]){
+	   pclose(fp);
+	   return -1;
+	   }
+	   }
+	   }
+	   printf(">> %s", buff);
+	   }
+	 */
+	pclose(fp);
+
+	memset(cmdline, 0, sizeof(cmdline));
+	sprintf(cmdline, "chmod 777 %s", exe_output);
+	printf("%s\n", cmdline);
+	fp = popen(cmdline, "r");
+	if(fp == NULL) { // ERROR
+		perror("chmod error");
+		return -1;
+	}
+	pclose(fp);
+
+	return 0;
+}
+
