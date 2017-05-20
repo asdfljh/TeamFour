@@ -203,8 +203,10 @@ int jsonParse(char* filePath, char* jsonContents) {
 		}
 	}
 
-	fileContents = base64_decode(bodyContents, bodySize - 1, &fileSize);
-	makeFile(filePath, nameContents, fileSize, fileContents);
+	makeFile(filePath, nameContents, bodySize-1, bodyContents);
+
+//	fileContents = base64_decode(bodyContents, bodySize - 1, &fileSize);
+//	makeFile(filePath, nameContents, fileSize, fileContents);
 
 	free(nameContents);
 	free(bodyContents);
@@ -215,9 +217,8 @@ int jsonParse(char* filePath, char* jsonContents) {
 void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents) {
 	FILE* fp;
 
-	strcpy(filePath, "/tmp/");
+	strcpy(filePath, "./");
 	strcat(filePath, nameContents);
-	strcat(filePath, ".txt");
 
 	fp = fopen(filePath, "w");
 
