@@ -35,7 +35,7 @@ def recv(s):
 	import_result = gpg.import_keys(key_data)
 	dec = import_result.fingerprints[0].encode('ascii')
 	print dec
-	decrypted_data = gpg.decrypt(data, passphrase='007dudrhkd')
+	decrypted_data = gpg.decrypt(data, passphrase='[client private key pass]')
 	print decrypted_data.data
 	
 	key_data = open('keys/notary.pub').read()
