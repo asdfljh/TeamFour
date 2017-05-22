@@ -3,11 +3,17 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <sys/user.h>
+#include <sys/reg.h>
+#include <signal.h>
 #include "jsmn.h"
 
 #define PORT_NUMBER 8001
-#define BUF_SIZE 65536
+#define BUF_SIZE 65536*16
 #define FILE_NAME_SIZE 256
 
 int port_bind(char* launcher_ip);
@@ -19,6 +25,11 @@ int check_range(char* start_ip, char* end_ip, char* object_ip);
 int jsonParse(char* filePath, char* jsonContents);
 int jsoneq(const char *json, jsmntok_t *tok, const char *s);
 void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents);
+
+int verify(char* base64_output);
+
+int executeFile(char* filePath);
+void debug(pid_t pid);
 
 int main(int argc, char** argv) {
 	int r;
@@ -71,8 +82,6 @@ int main(int argc, char** argv) {
 			if (r <= 0) {
 				break;
 			}
-
-			printf("DEBUG] GET: %s\n", buffer);
 
 			if (jsonParse(filePath, buffer) == 0) {
 				printf("DEBUG] Client: %s\n", filePath);
@@ -199,12 +208,12 @@ int jsonParse(char* filePath, char* jsonContents) {
 			bodyContents = (char*)malloc(bodySize*sizeof(char));
 			memcpy(bodyContents, jsonContents + t[i+1].start, bodySize - 1);
 			bodyContents[bodySize] = '\0';
-			printf("DEBUG] body: %s\n", bodyContents);
+			printf("DEBUG] body: %d\n", (int)  bodySize-1);
 		}
 	}
 
-	fileContents = base64_decode(bodyContents, bodySize - 1, &fileSize);
-	makeFile(filePath, nameContents, fileSize, fileContents);
+	makeFile(filePath, nameContents, bodySize-1, bodyContents);
+	verify(filePath);
 
 	free(nameContents);
 	free(bodyContents);
@@ -215,13 +224,117 @@ int jsonParse(char* filePath, char* jsonContents) {
 void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents) {
 	FILE* fp;
 
-	strcpy(filePath, "/tmp/");
+	strcpy(filePath, "./");
 	strcat(filePath, nameContents);
-	strcat(filePath, ".txt");
 
 	fp = fopen(filePath, "w");
-
+	
 	fwrite(fileContents, 1, fileSize, fp);
 
 	fclose(fp);
+}
+
+int verify(char* base64_output){
+	char cmdline[150];
+	char gpg_output[100];
+	char exe_output[100];
+	char buff[1024];
+	FILE *fp;
+
+	strcpy(gpg_output, base64_output);
+	strcat(gpg_output, ".gpg");
+	
+	memset(cmdline, 0, sizeof(cmdline));
+	sprintf(cmdline, "base64 --decode %s > %s", base64_output, gpg_output);
+	printf("%s\n", cmdline);
+	fp = popen(cmdline, "r");
+	if(fp == NULL) { // ERROR
+		perror("base64 error");
+		pclose(fp);
+		return -1;
+	}
+	pclose(fp);
+
+	strcpy(exe_output, base64_output);
+	strcat(exe_output, ".exe");
+
+	memset(cmdline, 0, sizeof(cmdline));
+	sprintf(cmdline, "gpg --output %s --decrypt %s 2>&1", exe_output, gpg_output);
+	printf("%s\n", cmdline);
+	fp = popen(cmdline, "r");
+	if(fp == NULL) { // ERROR
+		perror("gpg error");
+		pclose(fp);
+		return -1;
+	}
+
+	fgets(buff, sizeof(buff), fp);
+	printf("buff: %s\n", buff);
+
+	/*
+	   int idx = 0;
+	   char* good = "gpg: Good signature from \"IS521_notary <IS521_notary@kaist.ac.kr>\"";
+	   while(fgets(buff, sizeof(buff), fp) != NULL){
+	   if(idx++ == 1){
+	   int i;
+	   for(i = 0 ; i < strlen(good) ; i++){
+	   if(buff[i] != good[i]){
+	   pclose(fp);
+	   return -1;
+	   }
+	   }
+	   }
+	   printf(">> %s", buff);
+	   }
+	 */
+	pclose(fp);
+
+	if (chmod(exe_output, 0755) == -1) {
+		fprintf(stderr, "chmod err\n");
+	}
+
+	executeFile(exe_output);
+
+	return 0;
+}
+
+int executeFile(char* filePath) {
+	pid_t child;
+	child = fork();
+	if(child == 0){ // childe
+		chroot("./");
+		ptrace(PTRACE_TRACEME, 0, 0, 0);
+		execl(filePath, filePath, 0);
+	}else if (child < 0){
+		perror("fork");
+	}else{ // parent
+		debug(child);
+	}
+
+	return 0;
+}
+
+void debug(pid_t pid) {
+	int syscall_num, status;
+	struct user_regs_struct regs;
+	waitpid(pid, &status, 0);
+	ptrace(PTRACE_SYSCALL, pid, 0, 0);
+	while(WIFSTOPPED(status)){
+		ptrace(PTRACE_GETREGS, pid, 0, &regs);
+		syscall_num = regs.orig_eax;
+		if(syscall_num == -1){ // Error occurred
+			printf("Error occurred at runtime\n");
+			kill(pid, 9);
+			return;
+		}
+		if(syscall_num == 11){ // execve
+			printf("SYSCALL #%d called\n", syscall_num);
+			kill(pid, 9);
+			return;
+		}
+		ptrace(PTRACE_SYSCALL, pid, 0, 0);
+		waitpid(pid, &status, 0);
+	}
+	return;
+	//printf("NONONO\n");
 }
