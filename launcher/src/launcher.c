@@ -12,7 +12,7 @@
 #include "jsmn.h"
 
 #define PORT_NUMBER 8001
-#define BUF_SIZE 65536
+#define BUF_SIZE 65536*16
 #define FILE_NAME_SIZE 256
 
 int port_bind(char* launcher_ip);
@@ -81,8 +81,6 @@ int main(int argc, char** argv) {
 			if (r <= 0) {
 				break;
 			}
-
-			printf("DEBUG] GET: %s\n", buffer);
 
 			if (jsonParse(filePath, buffer) == 0) {
 				printf("DEBUG] Client: %s\n", filePath);
@@ -209,7 +207,7 @@ int jsonParse(char* filePath, char* jsonContents) {
 			bodyContents = (char*)malloc(bodySize*sizeof(char));
 			memcpy(bodyContents, jsonContents + t[i+1].start, bodySize - 1);
 			bodyContents[bodySize] = '\0';
-			printf("DEBUG] body: %s\n", bodyContents);
+			printf("DEBUG] body: %d\n", (int)  bodySize-1);
 		}
 	}
 
@@ -231,7 +229,7 @@ void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char
 	strcat(filePath, nameContents);
 
 	fp = fopen(filePath, "w");
-
+	
 	fwrite(fileContents, 1, fileSize, fp);
 
 	fclose(fp);
@@ -246,6 +244,8 @@ int verify(char* base64_output){
 
 	strcpy(gpg_output, base64_output);
 	strcat(gpg_output, ".gpg");
+	
+	printf("DEBUG] PASS\n");
 
 	memset(cmdline, 0, sizeof(cmdline));
 	sprintf(cmdline, "base64 --decode %s > %s", base64_output, gpg_output);
@@ -270,6 +270,9 @@ int verify(char* base64_output){
 		pclose(fp);
 		return -1;
 	}
+
+	fgets(buff, sizeof(buff), fp);
+	printf("buff: %s\n", buff);
 
 	/*
 	   int idx = 0;
@@ -327,7 +330,7 @@ void debug(pid_t pid) {
 	ptrace(PTRACE_SYSCALL, pid, 0, 0);
 	while(WIFSTOPPED(status)){
 		ptrace(PTRACE_GETREGS, pid, 0, &regs);
-		syscall_num = regs.orig_eax;
+		syscall_num = regs.orig_rax;
 		if(syscall_num == -1){ // Error occurred
 			printf("Error occurred at runtime\n");
 			kill(pid, 9);
