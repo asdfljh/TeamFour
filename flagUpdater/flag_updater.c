@@ -109,13 +109,11 @@ int verify_signature(char buf[BUFSIZE]){
 
 	// GPG Decryption
 
-	//TODO : handle the problem brought by the miss of the caracter "^@" in buf...
-
 	fp = fopen("encrypt.c.gpg", "w+");
 	fprintf(fp, "%s", buf);
 	fclose(fp);
 
-	fp = popen(" gpg --decrypt test/test.c.gpg > verif.flag", "r"); //decrypt the file / TODO : change test/test.c.gpg by encrypt.c.gpg 
+	fp = popen(" gpg --decrypt encrypt.c.gpg > verif.flag", "r"); //decrypt the file / TODO : to test use test/test.c.gpg instead of encrypt.c.gpg 
 	fgets(path, PATH_MAX, fp);
 	pclose(fp);
 
@@ -192,7 +190,7 @@ void listen_client(){
 	char *hostaddrp; /* dotted decimal host addr string */
 	int optval; /* flag value for setsockopt */
 	int n; /* message byte size */
-	int portno = 42;
+	int portno = 4200;
 	char path[PATH_MAX];
 
 	// Create the parent socket 
