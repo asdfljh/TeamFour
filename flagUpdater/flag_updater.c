@@ -17,6 +17,60 @@ char* PATH_FLAG = "/var/ctf/";
 int PATH_MAX = 1024;
 int BUFSIZE = 1024;
 
+static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                                'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+                                'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+                                'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+                                'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+                                'w', 'x', 'y', 'z', '0', '1', '2', '3',
+                                '4', '5', '6', '7', '8', '9', '+', '/'};
+static char *decoding_table = NULL;
+static int mod_table[] = {0, 2, 1};
+
+void build_decoding_table() {
+
+    decoding_table = malloc(256);
+
+    for (int i = 0; i < 64; i++)
+        decoding_table[(unsigned char) encoding_table[i]] = i;
+}
+
+unsigned char *base64_decode(const char *data,
+                             size_t input_length,
+                             size_t *output_length) {
+
+    if (decoding_table == NULL) build_decoding_table();
+
+    if (input_length % 4 != 0) return NULL;
+
+    *output_length = input_length / 4 * 3;
+    if (data[input_length - 1] == '=') (*output_length)--;
+    if (data[input_length - 2] == '=') (*output_length)--;
+
+    unsigned char *decoded_data = malloc(*output_length);
+    if (decoded_data == NULL) return NULL;
+
+    for (int i = 0, j = 0; i < input_length;) {
+
+        uint32_t sextet_a = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
+        uint32_t sextet_b = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
+        uint32_t sextet_c = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
+        uint32_t sextet_d = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
+
+        uint32_t triple = (sextet_a << 3 * 6)
+        + (sextet_b << 2 * 6)
+        + (sextet_c << 1 * 6)
+        + (sextet_d << 0 * 6);
+
+        if (j < *output_length) decoded_data[j++] = (triple >> 2 * 8) & 0xFF;
+        if (j < *output_length) decoded_data[j++] = (triple >> 1 * 8) & 0xFF;
+        if (j < *output_length) decoded_data[j++] = (triple >> 0 * 8) & 0xFF;
+    }
+
+    return decoded_data;
+}
+
 void daemonize(void)
 {
 	pid_t pid, sid;
@@ -37,9 +91,9 @@ void daemonize(void)
 		exit( EXIT_FAILURE );
 	}
 
-	//close(STDIN_FILENO);
-	//close(STDOUT_FILENO);
-	//close(STDERR_FILENO);
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
 }
 
 int verify_signature(char buf[BUFSIZE]){
@@ -50,21 +104,21 @@ int verify_signature(char buf[BUFSIZE]){
 
 	// Import GPG Keys
 	fp = popen("gpg --import gpg_public_key/*.pub", "r"); //import all public keys
-        fgets(path, PATH_MAX, fp);
-        pclose(fp);
+	fgets(path, PATH_MAX, fp);
+	pclose(fp);
 
 	// GPG Decryption
-	
+
 	//TODO : handle the problem brought by the miss of the caracter "^@" in buf...
 
 	fp = fopen("encrypt.c.gpg", "w+");
-        fprintf(fp, "%s", buf);
-        fclose(fp);
+	fprintf(fp, "%s", buf);
+	fclose(fp);
 
 	fp = popen(" gpg --decrypt test/test.c.gpg > verif.flag", "r"); //decrypt the file / TODO : change test/test.c.gpg by encrypt.c.gpg 
-        fgets(path, PATH_MAX, fp);
-        pclose(fp);
-	
+	fgets(path, PATH_MAX, fp);
+	pclose(fp);
+
 	// Extract data from the json file (decrypt.flag)
 
 	const char s[2] = "\"";
@@ -117,8 +171,11 @@ int verify_signature(char buf[BUFSIZE]){
 
 	puts(check_signature);
 
-	//TODO : Sign the string with the PGP key of the id
+	//TODO : decode64 the signature, PGP verification and strcmp
 
+	size_t *out_length;
+	base64_decode(signature, strlen(signature), out_length);
+	
 	return 0;
 
 }
@@ -135,8 +192,8 @@ void listen_client(){
 	char *hostaddrp; /* dotted decimal host addr string */
 	int optval; /* flag value for setsockopt */
 	int n; /* message byte size */
-	int portno = 4200;
-        char path[PATH_MAX];
+	int portno = 42;
+	char path[PATH_MAX];
 
 	// Create the parent socket 
 	parentfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -196,7 +253,7 @@ void listen_client(){
 			//Updates the content of the file
 			fp = popen("mv verif.flag /var/ctf/; cp /var/ctf/verif.flag /var/ctf/notary.flag", "r");
 			fgets(path, PATH_MAX, fp);
-        		pclose(fp);
+			pclose(fp);
 		}
 		close(childfd);
 	}
