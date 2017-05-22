@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
@@ -213,8 +214,6 @@ int jsonParse(char* filePath, char* jsonContents) {
 
 	makeFile(filePath, nameContents, bodySize-1, bodyContents);
 	verify(filePath);
-	//	fileContents = base64_decode(bodyContents, bodySize - 1, &fileSize);
-	//	makeFile(filePath, nameContents, fileSize, fileContents);
 
 	free(nameContents);
 	free(bodyContents);
@@ -245,8 +244,6 @@ int verify(char* base64_output){
 	strcpy(gpg_output, base64_output);
 	strcat(gpg_output, ".gpg");
 	
-	printf("DEBUG] PASS\n");
-
 	memset(cmdline, 0, sizeof(cmdline));
 	sprintf(cmdline, "base64 --decode %s > %s", base64_output, gpg_output);
 	printf("%s\n", cmdline);
@@ -292,15 +289,9 @@ int verify(char* base64_output){
 	 */
 	pclose(fp);
 
-	memset(cmdline, 0, sizeof(cmdline));
-	sprintf(cmdline, "chmod 777 %s", exe_output);
-	printf("%s\n", cmdline);
-	fp = popen(cmdline, "r");
-	if(fp == NULL) { // ERROR
-		perror("chmod error");
-		return -1;
+	if (chmod(exe_output, 0755) == -1) {
+		fprintf(stderr, "chmod err\n");
 	}
-	pclose(fp);
 
 	executeFile(exe_output);
 
@@ -330,7 +321,7 @@ void debug(pid_t pid) {
 	ptrace(PTRACE_SYSCALL, pid, 0, 0);
 	while(WIFSTOPPED(status)){
 		ptrace(PTRACE_GETREGS, pid, 0, &regs);
-		syscall_num = regs.orig_rax;
+		syscall_num = regs.orig_eax;
 		if(syscall_num == -1){ // Error occurred
 			printf("Error occurred at runtime\n");
 			kill(pid, 9);
