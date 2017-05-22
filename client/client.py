@@ -10,18 +10,16 @@ def send(argv):
 	port = 8000
 	filename = argv
 	filesize = struct.pack("<Q", os.path.getsize(argv))	
-	
 	s.connect(("143.248.6.229",port))
 	f=open(argv,'rb')  	
-#	print 'sending filesize..'
-	s.send(filesize)	
-#	print 'sending...'
-	
-	
-	t= 1
-	while t:	
-		t = f.read(1024)		
-		s.send(t)	
+	s.send(filesize)
+	print 'sending filesize..'	
+	s.send(f.read())
+
+#	t= 1
+#	while t:	
+#		t = f.read(1024)		
+#		s.send(t)	
 	f.close()
 
 	print 'Done sending'
@@ -40,7 +38,10 @@ def recv(s):
 	
 	
 	try:
+		
 		filesize = struct.unpack("<Q",s.recv(8))[0]			
+		g.write(s.recv(filesize))
+		'''
 		while (filesize > 0 ):
 			if(filesize  < 1025):
 				chunk = s.recv(filesize)
@@ -49,7 +50,7 @@ def recv(s):
 			chunk = s.recv(1024)
 			g.write(chunk)
 			filesize -= 1024
-			
+			'''
 	except:
 		print('error occured')
 	print 'Done'
