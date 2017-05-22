@@ -13,63 +13,7 @@
 #include <locale.h> 
 #include <errno.h>
 
-char* PATH_FLAG = "/var/ctf/";
-int PATH_MAX = 1024;
-int BUFSIZE = 1024;
-
-static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-                                'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-                                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-                                'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
-                                'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-                                'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-                                'w', 'x', 'y', 'z', '0', '1', '2', '3',
-                                '4', '5', '6', '7', '8', '9', '+', '/'};
-static char *decoding_table = NULL;
-static int mod_table[] = {0, 2, 1};
-
-void build_decoding_table() {
-
-    decoding_table = malloc(256);
-
-    for (int i = 0; i < 64; i++)
-        decoding_table[(unsigned char) encoding_table[i]] = i;
-}
-
-unsigned char *base64_decode(const char *data,
-                             size_t input_length,
-                             size_t *output_length) {
-
-    if (decoding_table == NULL) build_decoding_table();
-
-    if (input_length % 4 != 0) return NULL;
-
-    *output_length = input_length / 4 * 3;
-    if (data[input_length - 1] == '=') (*output_length)--;
-    if (data[input_length - 2] == '=') (*output_length)--;
-
-    unsigned char *decoded_data = malloc(*output_length);
-    if (decoded_data == NULL) return NULL;
-
-    for (int i = 0, j = 0; i < input_length;) {
-
-        uint32_t sextet_a = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
-        uint32_t sextet_b = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
-        uint32_t sextet_c = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
-        uint32_t sextet_d = data[i] == '=' ? 0 & i++ : decoding_table[data[i++]];
-
-        uint32_t triple = (sextet_a << 3 * 6)
-        + (sextet_b << 2 * 6)
-        + (sextet_c << 1 * 6)
-        + (sextet_d << 0 * 6);
-
-        if (j < *output_length) decoded_data[j++] = (triple >> 2 * 8) & 0xFF;
-        if (j < *output_length) decoded_data[j++] = (triple >> 1 * 8) & 0xFF;
-        if (j < *output_length) decoded_data[j++] = (triple >> 0 * 8) & 0xFF;
-    }
-
-    return decoded_data;
-}
+int BUFSIZE = 5120;
 
 void daemonize(void)
 {
@@ -98,34 +42,32 @@ void daemonize(void)
 
 int verify_signature(char buf[BUFSIZE]){
 	FILE *fp, *sed;
-	char path[PATH_MAX];
-	char new_buf[BUFSIZE];
-	int disc = 10;
+	char path[BUFSIZE];
 
 	// Import GPG Keys
 	fp = popen("gpg --import gpg_public_key/*.pub", "r"); //import all public keys
-	fgets(path, PATH_MAX, fp);
+	fgets(path, BUFSIZE, fp);
 	pclose(fp);
 
 	// GPG Decryption
 
-	fp = fopen("encrypt.c.gpg", "w+");
+	fp = fopen("received_encrypt.flag.gpg", "w+");
 	fprintf(fp, "%s", buf);
 	fclose(fp);
 
-	fp = popen(" gpg --decrypt encrypt.c.gpg > verif.flag", "r"); //decrypt the file / TODO : to test use test/test.c.gpg instead of encrypt.c.gpg 
-	fgets(path, PATH_MAX, fp);
+	fp = popen(" gpg --decrypt received_encrypt.flag.gpg >> verif.flag", "r"); // TODO : to test use test/test.c.gpg instead of received_encrypt.flag.gpg
+	fgets(path, BUFSIZE, fp);
 	pclose(fp);
 
-	// Extract data from the json file (decrypt.flag)
+	// Extract data from the json file 
 
 	const char s[2] = "\"";
 	char *token;
-	char signature[100];
-	char githubID[100];
-	char newflag[100];
+	char signature[BUFSIZE];
+	char githubID[BUFSIZE];
+	char newflag[BUFSIZE];
 	char carac;
-	char line[100];
+	char line[BUFSIZE];
 	int i = 0;
 
 	sed = fopen("verif.flag", "r");
@@ -156,12 +98,13 @@ int verify_signature(char buf[BUFSIZE]){
 	fclose(sed);
 
 	printf("Github ID : %s\n", githubID);
+        printf("New Flag : %s\n", newflag);
 	printf("Signature : %s\n", signature);
-	printf("New Flag : %s\n", newflag);
 
 	/* Verify the signature */
 
-	char check_signature[100];
+	char check_signature[BUFSIZE];
+	char *decode64_signature;
 
 	strcpy(check_signature, githubID);
 	strcat(check_signature, ":");
@@ -169,11 +112,38 @@ int verify_signature(char buf[BUFSIZE]){
 
 	puts(check_signature);
 
-	//TODO : decode64 the signature, PGP verification and strcmp
+	//Decode64 the signature
+	fp = fopen("signature_encrypt64.flag", "w+"); //encrypt64.flag contains the signature 64-encoded and signed by one of the TA
+        fprintf(fp, "%s", signature);
+        fclose(fp);
 
-	size_t *out_length;
-	base64_decode(signature, strlen(signature), out_length);
-	
+	fp = popen("python flagUpdater/script_64.py >> signature_decrypt64.flag.gpg", "r"); //decode_64.flag.gpg contains the signature signed by one of the TA
+        fgets(path, BUFSIZE, fp);
+        pclose(fp);
+
+	//GPG Decryption
+	fp = popen("gpg --decrypt signature_decrypt64.flag.gpg >> signature_decrypted.flag", "r"); //decode_64.flag contains the final signature unsigned 
+        fgets(path, BUFSIZE, fp);
+        pclose(fp);
+
+
+	//Check the signatures
+	char chain[BUFSIZE];
+        char final[BUFSIZE];
+
+	sed = fopen("signature_decrypted.flag", "r");
+	while (fgets(chain, BUFSIZE, sed) != NULL){
+            strcpy(final, chain);
+        }
+	puts("Decode_64 sign");
+	chain[strlen(chain) - 1] = '\0';
+	puts(chain);
+        fclose(sed);
+
+	int ret = strcmp(chain, check_signature);
+	if(ret != 0)
+		return -1;	
+
 	return 0;
 
 }
@@ -190,8 +160,8 @@ void listen_client(){
 	char *hostaddrp; /* dotted decimal host addr string */
 	int optval; /* flag value for setsockopt */
 	int n; /* message byte size */
-	int portno = 4200;
-	char path[PATH_MAX];
+	int portno = 42;
+	char path[BUFSIZE];
 
 	// Create the parent socket 
 	parentfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -249,10 +219,15 @@ void listen_client(){
 			perror("The signature of the file isn't good\n");
 		}else{
 			//Updates the content of the file
-			fp = popen("mv verif.flag /var/ctf/; cp /var/ctf/verif.flag /var/ctf/notary.flag", "r");
-			fgets(path, PATH_MAX, fp);
+			fp = popen("mv verif.flag /var/ctf/; mv /var/ctf/verif.flag /var/ctf/notary.flag", "r");
+			fgets(path, BUFSIZE, fp);
 			pclose(fp);
 		}
+
+		fp = popen("rm *.flag *.gpg", "r");
+                fgets(path, BUFSIZE, fp);
+                pclose(fp);
+
 		close(childfd);
 	}
 }
