@@ -9,11 +9,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <gpgme.h>
 #include <locale.h> 
 #include <errno.h>
 
 int BUFSIZE = 5120;
+int portno = 4200;
 
 void daemonize(void)
 {
@@ -45,17 +45,18 @@ int verify_signature(char buf[BUFSIZE]){
 	char path[BUFSIZE];
 
 	// Import GPG Keys
-	fp = popen("gpg --import gpg_public_key/*.pub", "r"); //import all public keys
+	fp = popen("gpg --import gpg_public_key/*.pub", "r");
 	fgets(path, BUFSIZE, fp);
 	pclose(fp);
 
 	// GPG Decryption
-
 	fp = fopen("received_encrypt.flag.gpg", "w+");
 	fprintf(fp, "%s", buf);
 	fclose(fp);
 
-	fp = popen(" gpg --decrypt received_encrypt.flag.gpg >> verif.flag", "r"); // TODO : to test use test/test.c.gpg instead of received_encrypt.flag.gpg
+	// TODO : to test use test/test.c.gpg 
+	fp = popen("gpg --decrypt --passphrase \"notary897\"" 
+		" received_encrypt.flag.gpg > verif.flag", "r"); 
 	fgets(path, BUFSIZE, fp);
 	pclose(fp);
 
@@ -113,39 +114,64 @@ int verify_signature(char buf[BUFSIZE]){
 	puts(check_signature);
 
 	//Decode64 the signature
-	fp = fopen("signature_encrypt64.flag", "w+"); //encrypt64.flag contains the signature 64-encoded and signed by one of the TA
+	//encrypt64.flag contains the signature 64-encoded 
+	//and signed by one of the TA
+	fp = fopen("signature_encrypt64.flag", "w+"); 
         fprintf(fp, "%s", signature);
         fclose(fp);
-
-	fp = popen("python flagUpdater/script_64.py >> signature_decrypt64.flag.gpg", "r"); //decode_64.flag.gpg contains the signature signed by one of the TA
+	
+	//decode_64.flag.gpg contains the signature 
+	//signed by one of the TA
+	fp = popen("python flagUpdater/script_64.py " 
+		"> signature_decrypt64.flag.gpg", "r"); 
+        fgets(path, BUFSIZE, fp);
+        pclose(fp);
+	
+	// Check the signer
+	//decode_64.flag.gpg contains the signature 
+	//signed by one of the TA
+	fp = popen("gpg --list-packets --batch signature_decrypt64.flag.gpg " 
+		"> signer_information.flag 2>&1", "r"); 
         fgets(path, BUFSIZE, fp);
         pclose(fp);
 
-	//GPG Decryption
-	fp = popen("gpg --decrypt signature_decrypt64.flag.gpg >> signature_decrypted.flag", "r"); //decode_64.flag contains the final signature unsigned 
-        fgets(path, BUFSIZE, fp);
-        pclose(fp);
+	if(strcmp(githubID, "DaramG") == 0){
+		fp = popen("grep -c \"HyungSeok Han\" signer_information.flag " 
+			"> number.flag", "r"); 
+		fgets(path, BUFSIZE, fp);
+        	pclose(fp);
+	}
+	else if(strcmp(githubID, "sangkilc") == 0){
+		fp = popen("grep -c \"Sang Kil Cha\" signer_information.flag "
+			"> number.flag", "r"); 
+                fgets(path, BUFSIZE, fp);
+                pclose(fp);
+	}
+	else if(strcmp(githubID, "soomin-kim") == 0){
+		fp = popen("grep -c \"Soomin Kim\" signer_information.flag "
+			"> number.flag", "r"); 
+                fgets(path, BUFSIZE, fp);
+                pclose(fp);
+	}
+	else if(strcmp(githubID, "jchoi2022") == 0){
+		fp = popen("grep -c \"Jaeseung Choi\" signer_information.flag "
+			"> number.flag", "r"); 
+                fgets(path, BUFSIZE, fp);
+                pclose(fp);
+	}
+	else{
+		return -1;
+	}
 
+	int nb;
+	fp = fopen("number.flag", "r+");
+	fscanf(fp, "%d", &nb);
+	fclose(fp);
 
-	//Check the signatures
-	char chain[BUFSIZE];
-        char final[BUFSIZE];
-
-	sed = fopen("signature_decrypted.flag", "r");
-	while (fgets(chain, BUFSIZE, sed) != NULL){
-            strcpy(final, chain);
-        }
-	puts("Decode_64 sign");
-	chain[strlen(chain) - 1] = '\0';
-	puts(chain);
-        fclose(sed);
-
-	int ret = strcmp(chain, check_signature);
-	if(ret != 0)
-		return -1;	
-
-	return 0;
-
+	if (nb <= 0)
+		return -1; //VERIF FAILED 
+	else 
+		return 0; //VERIF SUCCEEDED
 }
 
 void listen_client(){
@@ -160,7 +186,6 @@ void listen_client(){
 	char *hostaddrp; /* dotted decimal host addr string */
 	int optval; /* flag value for setsockopt */
 	int n; /* message byte size */
-	int portno = 42;
 	char path[BUFSIZE];
 
 	// Create the parent socket 
@@ -193,7 +218,8 @@ void listen_client(){
 	while (1) {
 
 		// Wait for a connection request 
-		childfd = accept(parentfd, (struct sockaddr *) &clientaddr, &clientlen);
+		childfd = accept(parentfd, 
+			(struct sockaddr *) &clientaddr, &clientlen);
 		if (childfd < 0)
 			perror("ERROR on accept");
 
@@ -219,7 +245,8 @@ void listen_client(){
 			perror("The signature of the file isn't good\n");
 		}else{
 			//Updates the content of the file
-			fp = popen("mv verif.flag /var/ctf/; mv /var/ctf/verif.flag /var/ctf/notary.flag", "r");
+			fp = popen("mv verif.flag /var/ctf/; "	
+				"mv /var/ctf/verif.flag /var/ctf/notary.flag", "r");
 			fgets(path, BUFSIZE, fp);
 			pclose(fp);
 		}
