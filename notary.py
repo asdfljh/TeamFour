@@ -118,9 +118,8 @@ def send_file_with_sign(c, gpg):
 	stream = 1
 
 	try:
-		while stream:
-			stream = sign_file.read(1024)
-			c.send(stream)
+		stream = sign_file.read(1024)
+		c.send(stream)
 
 	except:
 		logging.exception("Unexpected error, file transmission failed")
@@ -146,7 +145,7 @@ def Isexecutable():
 
 def file_is_executable(gpg,address):
 	de_file = open('./Download/temp.gpg')	
-	IP = '127.0.0.5'     # Designated local host
+	IP = '127.0.0.2'     # Designated local host
 	port = 8001	
 	
 	tm = datetime.now()
@@ -219,8 +218,7 @@ def authuser(c,path):
 		return -1
 
 	number = random.getrandbits(512)
-
-	encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "[server private key pass]")
+	encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "notary897")
 	c.sendall(str(encrypted_data))
 	authrandom = c.recv(2048)
 
@@ -288,6 +286,7 @@ def main(argv):
 			errorInConnect(connect,'Send file with sign error')
 			continue
 		print ('Sign and Send')
+		connect.close()
 
 		if Isexecutable() > 0:
 			if file_is_executable(gpg,address) < 0:

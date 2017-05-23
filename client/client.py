@@ -5,6 +5,9 @@ import time
 import struct
 import gnupg
 
+global_keypath = "../keys/"
+global_passphrase = "007dudrhkd"
+
 def initNet(argv):
 	s= socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 	port = 8000
@@ -20,22 +23,22 @@ def initNet(argv):
 def auth(s):
 	data = s.recv(2048)
 #data = cPickle.loads(r)
-	print data
+	print "Recv: data"+data
 
 	gpg = gnupg.GPG()
 	filename = sys.argv[2]+'.key'
-	filepath = os.listdir('[key directory]')
-	key_data = open('[key directory]' +'/notary.pub').read()#sever public key
+	filepath = os.listdir(global_keypath)
+	key_data = open(global_keypath +'/notary.pub').read()#sever public key
 	import_result = gpg.import_keys(key_data)
 	ver = import_result.fingerprints[0].encode('ascii')
-	key_data = open('[key directory]'+filename).read()
+	key_data = open(global_keypath+filename).read()
 	import_result = gpg.import_keys(key_data)
 	dec = import_result.fingerprints[0].encode('ascii')
-	print dec
-	decrypted_data = gpg.decrypt(data, passphrase='[user private key pass]')
-	print decrypted_data.data
+	print "fingerprint"+dec
+	decrypted_data = gpg.decrypt(data, passphrase= global_passphrase)
+	print "decrypted data:"+decrypted_data.data
 					
-	key_data = open('[key directory]'+'/notary.pub').read()
+	key_data = open(global_keypath+'/notary.pub').read()
 	import_result = gpg.import_keys(key_data)
 	ver = import_result.fingerprints[0].encode('ascii')
 	authdata = gpg.encrypt(str(decrypted_data.data), ver, always_trust = True)
@@ -43,7 +46,7 @@ def auth(s):
 	s.sendall(str(authdata))
 	print 'check'
 	#print ("decrypted ok : " + decrypted_data.ok)
-	s.close()
+
 	return 1
 
 def send(s,argv):
