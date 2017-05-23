@@ -3,12 +3,13 @@
 
 # Install & Usage    
     
-    To install python dependencies, follow:
+To install python dependencies, follow:
     
 ```bash
 (sudo) ./install.sh
 ```
-    
+Usage
+
     Execution Order : Notary -> Launcher -> Client
 
     Server :  (sudo) python notary.py [Key Directory]
