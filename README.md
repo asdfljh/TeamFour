@@ -1,13 +1,13 @@
 # TeamFour - Notary Program
 
-
 # Install & Usage    
     
-    To install python dependencies, follow:
+To install python dependencies, follow:
     
 ```bash
 (sudo) ./install.sh
 ```
+Usage
     
     Execution Order : Notary -> Launcher -> Client
 
@@ -15,7 +15,6 @@
     
     Client :  python client.py [file] [Github ID]
     
-
     Launcher : ./launcher [Launcher's IP Address] [Start Server IP Range] [End Server IP Range]
 
 # Protocol
