@@ -11,8 +11,8 @@ global_passphrase = ""
 def initNet(argv):
     s= socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     port = 8000
-        gitid = argv
-        s.connect(("127.0.0.1",port))
+    gitid = argv
+    s.connect(("127.0.0.1",port))
     test = s.recv(128)
     print test
     s.send(gitid)
@@ -65,18 +65,19 @@ def recv(s):
 
     filename = sys.argv[1] + '.gpg'
     g = open(filename,'wb')
+
     if( s.recv(5) == "XXXXX"):
         print("file is not verified. Please sign first.")
         s.close()
         return
 
-
     try:
-
         filesize = struct.unpack("<Q",s.recv(8))[0]
         g.write(s.recv(filesize))
+
     except:
         print('error occured')
+
     print 'Done'
     g.close()
     s.close()
