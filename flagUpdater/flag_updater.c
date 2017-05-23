@@ -13,7 +13,7 @@
 #include <errno.h>
 
 int BUFSIZE = 5120;
-int portno = 4200;
+int portno = 42;
 
 void daemonize(void)
 {
