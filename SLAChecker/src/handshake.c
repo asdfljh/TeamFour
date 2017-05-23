@@ -30,7 +30,7 @@ int main(int argc, char** argv){
     char* ip = argv[1];
     int port = atoi(argv[2]);     
     createSocket(ip, port);
-    /* 
+    /*   
     int connect = timeout_connect();
     if(connect<1)
         return 2;
@@ -43,14 +43,17 @@ int main(int argc, char** argv){
         return 1; 
     }
     printf("Authenticating with wrong github-id terminated normally\n");
-    
     */
-    int hand_randnum = handshake_randnum();
+    char* randnum; 
+        
+    int hand_randnum = handshake_randnum_receive(&randnum);
     if(hand_randnum < 0){
+        printf("Received random number is not signed by Notary\n");
         close(client_sockfd);
         return 1;
     }
-    //printf("Random Number from Notary : %d \n", hand_randnum); 
+    printf("Random Number from Notary : %s \n", randnum); 
+    handshake_randnum_send(randnum);
     close(client_sockfd);
     return 0;
 }
@@ -168,30 +171,47 @@ int handout_github(char* github_id){
     return 1; 
 }
 
-int handshake_randnum(){
+int handshake_randnum_receive(char** result){
     int ret_recv, ret_send;
     char recv_data[1024];
     char send_data[1024];
     int err;
     char* randnum_file = "randnum.gpg";
     char cmdline[2048];
-
-    //ret_recv = recv(client_sockfd, recv_data, sizeof(recv_data), 0);
+    /*
+    ret_recv = recv(client_sockfd, recv_data, sizeof(recv_data), 0);
     
-    //sprintf(cmdline, "echo %s > %s", recv_data, randnum_file);
-    //system(cmdline);
+    sprintf(cmdline, "echo %s > %s", recv_data, randnum_file);
+    system(cmdline);
+    */
     char* randnum_result;
     int randnum = verify(randnum_file, &randnum_result);
+    sprintf(cmdline, "rm %s\0", randnum_file);
+    system(cmdline);
     if(randnum < 0){
-        printf("(ERROR) Received randnum is not verified\n");
         return -1; 
-    }    
-    printf("RANDNUM Received : %s\n", randnum_result);  
-     
+    }   
+    *result = randnum_result; 
+    
+    return 1; 
     //ret_send = send(client_sockfd, github_id, strlen(github_id)+1, 0);
     //ret_recv = recv(client_sockfd, recv_data, sizeof(recv_data), 0);
     
     
+}
+
+int handshake_randnum_send(char* randnum){
+    int ret_recv, ret_send;
+    char recv_data[1024];
+    char send_data[1024];
+    int err;
+    char* randnum_file = "randnum2";
+
+    char cmdline1[2048];
+    sprintf(cmdline1, "echo %s > %s", randnum, randnum_file);
+    system(cmdline1); 
+    sprintf(cmdline1, "gpg --sign %s", randnum_file);
+    system(cmdline1); 
 }
 
 int verify(char* verifiee, char **randnum_result){
@@ -225,7 +245,6 @@ int verify(char* verifiee, char **randnum_result){
         }
     }
     pclose(fp);
-    printf("%s\n", result);
     return 1;
 }
 

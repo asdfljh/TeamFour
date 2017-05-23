@@ -11,6 +11,9 @@ $(BUILDDIR)/right_github: ./src/right_github.c $(BUILDDIR)
 $(BUILDDIR)/wrong_github: ./src/wrong_github.c $(BUILDDIR)
 	gcc -o$@ $<
 
+$(BUILDDIR)/handshake: ./src/handshake.c $(BUILDDIR)
+	gcc -o$@ $<
+
 $(BUILDDIR)/tester: ./src/sla_tester.c $(BUILDDIR)
 	gcc -o$@ $<
 
