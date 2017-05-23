@@ -43,13 +43,13 @@ B. If C succeeds to authenticate, Notary program gets a signed file from client.
     
     4. N sends signed file to C
 
-C. C sends a json format bytes to L(Launcher)
+C. N sends a json format bytes to L(Launcher)
 
     ?. N sends the json-based bytes to L(Launcher).
 
 D. Launcher program gets bytes of json format.
 
-    1. L(Launcher) gets json-based bytes from C.
+    1. L(Launcher) gets json-based bytes from N.
 
     2. L checks the json-based bytes are right format.
 
