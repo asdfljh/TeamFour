@@ -5,8 +5,8 @@ import time
 import struct
 import gnupg
 
-global_keypath = "../keys/"
-global_passphrase = "007dudrhkd"
+global_keypath = ""
+global_passphrase = ""
 
 def initNet(argv):
     s= socket.socket(socket.AF_INET,socket.SOCK_STREAM)

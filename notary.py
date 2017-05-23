@@ -208,7 +208,7 @@ def authuser(c,path):
         return -1
 
     number = random.getrandbits(512)
-    encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "notary897")
+    encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "")
     c.sendall(str(encrypted_data))
     authrandom = c.recv(2048)
 
@@ -220,7 +220,7 @@ def authuser(c,path):
 
     key_data2 = open(path+filename).read()
     import_result = gpgauth.import_keys(key_data2)
-    verified = gpgauth.decrypt(authrandom, passphrase="notary897")
+    verified = gpgauth.decrypt(authrandom, passphrase="")
 
     if not verified.ok :
         print(verified.status)
