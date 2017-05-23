@@ -5,9 +5,9 @@
     
     To install python dependencies, follow:
     
-    ```bash
-    sudo ./install.sh
-    ```
+```bash
+(sudo) ./install.sh
+```
     
     Execution Order : Notary -> Launcher -> Client
 
