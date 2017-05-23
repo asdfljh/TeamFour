@@ -9,7 +9,7 @@ To install python dependencies, follow:
 ```
 Usage
     
-    Execution Order : Notary -> Launcher -> Client
+    Execution Order : Server -> Launcher -> Client
 
     Server :  (sudo) python notary.py [Key Directory]
     
@@ -69,6 +69,5 @@ D. Launcher program gets bytes of json format.
 
 # Misc
 
-1. This program is written in Python 2.X
+1. Notary program is written in Python 2.X
 
-2. The program has the function that imports keys but you should import private key by shell commands since python gnupg library doesn't support typing the passphrase when importing the private key.
