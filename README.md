@@ -39,10 +39,10 @@ B. If C succeeds to authenticate, Notary program gets a signed file from client.
         
     2. N verifies sign and signs it with N's private Key
     
-    3. If file is Executable, N encodes signed file with base64 and sends it to Launcher
+    3. N sends signed file to C
     
-    4. N sends signed file to C
-
+    4. If file is Executable, N encodes signed file with base64 and sends it to Launcher
+    
 C. N sends a json format bytes to L(Launcher)
 
     ?. N sends the json-based bytes to L(Launcher).
