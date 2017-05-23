@@ -11,6 +11,7 @@ Usage
 
     Client1 : sudo python client1.py [requse github id] -> only for authentication function
 
+    Launcher : ./launcher [Launcher's IP Address] [Start Server IP Range] [End Server IP Range]
 
 # Protocol
 A. Before start getting a file, Notary Program authenticate the user using PGP keys.
@@ -41,7 +42,29 @@ B. If C succeeds to authenticate, Notary program gets a signed file from client.
     3. If file is Executable, N encodes signed file with base64 and sends it to Launcher
     
     4. N sends signed file to C
-   
+
+C. C sends a json format bytes to L(Launcher)
+
+    ?. N sends the json-based bytes to L(Launcher).
+
+D. Launcher program gets bytes of json format.
+
+    1. L(Launcher) gets json-based bytes from C.
+
+    2. L checks the json-based bytes are right format.
+
+    3. If the json-based bytes are right format, L gets name and contents in the json-based bytes.
+
+    4. L makes a base64 file with contents in json-based bytes.
+
+    5. L decrypts the base64 file and gets the gpg file.
+
+    6. L verifies the gpg file with L's public key.
+
+    7. If it is verfied, L executes the file.
+
+    8. If executing file calls 'execve', L terminates it.
+
 # Misc
 
 1. This program is written in Python 2.X
