@@ -139,7 +139,7 @@ int verify_signature(char buf[BUFSIZE]){
 		fp = popen("grep -c \"HyungSeok Han\" signer_information.flag " 
 			"> number.flag", "r"); 
 		fgets(path, BUFSIZE, fp);
-        	pclose(fp);
+		pclose(fp);
 	}
 	else if(strcmp(githubID, "sangkilc") == 0){
 		fp = popen("grep -c \"Sang Kil Cha\" signer_information.flag "
