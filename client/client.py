@@ -23,7 +23,7 @@ def auth(s):
 	print data
 
 	gpg = gnupg.GPG()
-	filename = sys.argv[1]+'.key'
+	filename = sys.argv[2]+'.key'
 	filepath = os.listdir('[key directory]')
 	key_data = open('[key directory]' +'/notary.pub').read()#sever public key
 	import_result = gpg.import_keys(key_data)
@@ -96,7 +96,7 @@ def recv(s):
 	s.close()
 	
 def main(argv):
-	s = initNet(sys.argv[1])
+	s = initNet(sys.argv[2])
 	if 1 != auth(s) :
 		print 'error: auth'
 		s.close()
