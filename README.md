@@ -1,15 +1,20 @@
-# TeamFour
-Notary Program
+# TeamFour - Notary Program
 
-Usage
 
+# Install & Usage    
+    
+    To install python dependencies, follow:
+    
+    ```bash
+    sudo ./install.sh
+    ```
+    
     Execution Order : Notary -> Launcher -> Client
 
     Server :  (sudo) python notary.py [Key Directory]
     
     Client :  python client.py [file] [Github ID]
-
-    Client1 : sudo python client1.py [requse github id] -> only for authentication function
+    
 
     Launcher : ./launcher [Launcher's IP Address] [Start Server IP Range] [End Server IP Range]
 
@@ -37,15 +42,13 @@ B. If C succeeds to authenticate, Notary program gets a signed file from client.
 
     1. C signs a file with her/his private key and send to the N
         
-    2. N verifies sign and signs it with N's private Key
+    2. N verifies sign(also extracts a plain file) and signs it with N's private Key
     
     3. N sends signed file to C
     
-    4. If file is Executable, N encodes signed file with base64 and sends it to Launcher
-    
 C. N sends a json format bytes to L(Launcher)
 
-    ?. N sends the json-based bytes to L(Launcher).
+    1. If the file is Executable, N encodes signed file with base64 and sends it as the json-based bytes to L(Launcher).    
 
 D. Launcher program gets bytes of json format.
 
