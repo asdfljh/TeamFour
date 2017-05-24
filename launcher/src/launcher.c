@@ -251,7 +251,7 @@ void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char
 
     getMilSecond(milSec);
 
-    strcpy(filePath, "./");
+    strcat(filePath, "./files/");
     strcat(filePath, milSec);
     strcat(filePath, "_");
     strcat(filePath, nameContents);
