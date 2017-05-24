@@ -24,7 +24,7 @@ TeamFour - Notary Program
 
     Launcher : ./launcher [Launcher's IP Address] [Start Server IP Range] [End Server IP Range]
 
-    Flag-Updater : ./flagUpdater/flag_updater    
+    Flag-Updater : (sudo) ./flagUpdater/flag_updater    
 
 ## Protocol
 
