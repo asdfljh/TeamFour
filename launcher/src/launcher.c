@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
         printf("DEBUG] Hello %s\n", inet_ntoa(client_address.sin_addr));
 
         /* get JSON format from notary program */
-        while(1) {
+//        while(1) {
             memset(buffer, 0, BUF_SIZE);
             memset(filePath, 0, FILE_NAME_SIZE);
 
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
                 printf("DEBUG] Client: %s\n", filePath);
             }
 
-        }
+//        }
 
         close(client_socket);
 
@@ -194,7 +194,6 @@ int jsonParse(char* filePath, char* jsonContents) {
     jsmntok_t t[128];
     char* nameContents;
     char* bodyContents;
-    char* fileContents;
     size_t nameSize = 0;
     size_t bodySize = 0;
     size_t fileSize = 0;
@@ -218,13 +217,13 @@ int jsonParse(char* filePath, char* jsonContents) {
             nameSize = t[i+1].end - t[i+1].start + 1;
             nameContents = (char*)malloc(nameSize*sizeof(char));
             memcpy(nameContents, jsonContents + t[i+1].start, nameSize - 1);
-            nameContents[nameSize] = '\0';
+            nameContents[nameSize-1] = '\0';
             printf("DEBUG] name: %s\n", nameContents);
         } else if (jsoneq(jsonContents, &t[i], "body") == 0) {
             bodySize = t[i+1].end - t[i+1].start + 1;
             bodyContents = (char*)malloc(bodySize*sizeof(char));
             memcpy(bodyContents, jsonContents + t[i+1].start, bodySize - 1);
-            bodyContents[bodySize] = '\0';
+            bodyContents[bodySize-1] = '\0';
             printf("DEBUG] body: %d\n", (int)  bodySize-1);
         }
     }
@@ -248,8 +247,13 @@ int jsonParse(char* filePath, char* jsonContents) {
 /* make base64 file */
 void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents) {
     FILE* fp;
+    char milSec[21];
+
+    getMilSecond(milSec);
 
     strcpy(filePath, "./");
+    strcat(filePath, milSec);
+    strcat(filePath, "_");
     strcat(filePath, nameContents);
 
     fp = fopen(filePath, "w");
@@ -275,7 +279,7 @@ int verify(char* base64_output){
 
     memset(cmdline, 0, sizeof(cmdline));
     sprintf(cmdline, "base64 --decode %s > %s", base64_output, gpg_output);
-    printf("%s\n", cmdline);
+    printf("DEBUG] %s\n", cmdline);
     fp = popen(cmdline, "r");
     if(fp == NULL) { // ERROR
         perror("base64 error");
@@ -290,7 +294,7 @@ int verify(char* base64_output){
 
     memset(cmdline, 0, sizeof(cmdline));
     sprintf(cmdline, "gpg --output %s --decrypt %s 2>&1", exe_output, gpg_output);
-    printf("%s\n", cmdline);
+
     fp = popen(cmdline, "r");
     if(fp == NULL) { // ERROR
         perror("gpg error");
@@ -302,7 +306,7 @@ int verify(char* base64_output){
         if (strncmp(good, buff, strlen(good)) == 0) {
             result = 1;
         }
-        printf("DEBUG] %s", buff);
+
     }
     pclose(fp);
 
@@ -366,16 +370,14 @@ void debug(pid_t pid) {
 }
 
 void getMilSecond(char* milSecond) {
+    struct tm t;
     struct timeval val;
-    struct tm* ptm;
 
     gettimeofday(&val, NULL);
-    ptm = localtime(&val.tv_sec);
 
-    memset(milSecond, 0x00, sizeof(milSecond));
+    localtime_r(&val.tv_sec, &t);
 
-    sprintf(milSecond, "%04d%02d%02d%02d%02d%02d%06ld"
-            , ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday
-            , ptm->tm_hour, ptm->tm_min, ptm->tm_sec
-            , val.tv_usec);
+    sprintf(milSecond, "%04d%02d%02d%02d%02d%02d%06ld",
+        t.tm_year+1900, t.tm_mon+1, t.tm_mday,
+        t.tm_hour, t.tm_min, t.tm_sec, val.tv_usec);
 }
