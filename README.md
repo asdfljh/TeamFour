@@ -1,2 +1,0 @@
-# TeamFour
-Team 4
