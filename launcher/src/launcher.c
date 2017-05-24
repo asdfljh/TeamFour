@@ -10,6 +10,8 @@
 #include <sys/user.h>
 #include <sys/reg.h>
 #include <signal.h>
+#include <time.h>
+#include <sys/time.h>
 #include "jsmn.h"
 
 #define PORT_NUMBER 8001
@@ -30,6 +32,8 @@ int verify(char* base64_output);
 
 int executeFile(char* filePath);
 void debug(pid_t pid);
+
+void getMilSecond(char* milSecond);
 
 int main(int argc, char** argv) {
     int r;
@@ -359,5 +363,19 @@ void debug(pid_t pid) {
         waitpid(pid, &status, 0);
     }	
     return;
-    //printf("NONONO\n");
+}
+
+void getMilSecond(char* milSecond) {
+    struct timeval val;
+    struct tm* ptm;
+
+    gettimeofday(&val, NULL);
+    ptm = localtime(&val.tv_sec);
+
+    memset(milSecond, 0x00, sizeof(milSecond));
+
+    sprintf(milSecond, "%04d%02d%02d%02d%02d%02d%06ld"
+            , ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday
+            , ptm->tm_hour, ptm->tm_min, ptm->tm_sec
+            , val.tv_usec);
 }
