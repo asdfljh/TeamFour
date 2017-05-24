@@ -34,6 +34,7 @@ int executeFile(char* filePath);
 void debug(pid_t pid);
 
 void getMilSecond(char* milSecond);
+void getDefaultPath(char* defaultPath, char* exePath);
 
 int main(int argc, char** argv) {
     int r;
@@ -43,6 +44,7 @@ int main(int argc, char** argv) {
     struct sockaddr_in client_address;
     char buffer[BUF_SIZE];
     char filePath[FILE_NAME_SIZE];
+    char defaultPath[FILE_NAME_SIZE];
 
     /* check the number of arguments */
     if (argc != 4) {
@@ -55,6 +57,8 @@ int main(int argc, char** argv) {
         fprintf(stderr, "IP Argument Error\n");
         exit(1);
     }
+
+    getDefaultPath(defaultPath, argv[0]);
 
     server_socket = port_bind(argv[1]);
 
@@ -83,21 +87,20 @@ int main(int argc, char** argv) {
         printf("DEBUG] Hello %s\n", inet_ntoa(client_address.sin_addr));
 
         /* get JSON format from notary program */
-//        while(1) {
-            memset(buffer, 0, BUF_SIZE);
-            memset(filePath, 0, FILE_NAME_SIZE);
+        memset(buffer, 0, BUF_SIZE);
+        memset(filePath, 0, FILE_NAME_SIZE);
 
-            r = read(client_socket, buffer, BUF_SIZE);
+        strcpy(filePath, defaultPath);
 
-            if (r <= 0) {
-                break;
-            }
+        r = read(client_socket, buffer, BUF_SIZE);
 
-            if (jsonParse(filePath, buffer) == 0) {
-                printf("DEBUG] Client: %s\n", filePath);
-            }
+        if (r <= 0) {
+            break;
+        }
 
-//        }
+        if (jsonParse(filePath, buffer) == 0) {
+            printf("DEBUG] Client: %s\n", filePath);
+        }
 
         close(client_socket);
 
@@ -251,7 +254,6 @@ void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char
 
     getMilSecond(milSec);
 
-    strcat(filePath, "./files/");
     strcat(filePath, milSec);
     strcat(filePath, "_");
     strcat(filePath, nameContents);
@@ -265,9 +267,9 @@ void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char
 
 /* verify and excute file */
 int verify(char* base64_output){
-    char cmdline[150];
-    char gpg_output[100];
-    char exe_output[100];
+    char cmdline[1024];
+    char gpg_output[FILE_NAME_SIZE];
+    char exe_output[FILE_NAME_SIZE];
     char buff[1024];
     FILE *fp;
     int result = 0;
@@ -380,4 +382,24 @@ void getMilSecond(char* milSecond) {
     sprintf(milSecond, "%04d%02d%02d%02d%02d%02d%06ld",
         t.tm_year+1900, t.tm_mon+1, t.tm_mday,
         t.tm_hour, t.tm_min, t.tm_sec, val.tv_usec);
+}
+
+void getDefaultPath(char* defaultPath, char* exePath) {
+    int i, count = 0;
+
+    realpath(exePath, defaultPath);
+
+    for (i = strlen(defaultPath); i >= 0; i--) {
+        if (defaultPath[i] == '/') {
+            count = count + 1;
+        }
+        defaultPath[i] == 0x00;
+
+        if (count == 2) {
+            defaultPath[i] = '\0';
+            break;
+        }
+    }
+
+    strcat(defaultPath, "/files/");
 }
