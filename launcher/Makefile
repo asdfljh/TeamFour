@@ -1,9 +1,13 @@
 BUILDDIR = build
+FILESDIR = files
 SRCDIR = src
 
-all: $(BUILDDIR) $(SRCDIR) $(BUILDDIR)/launcher
+all: $(FILESDIR) $(BUILDDIR) $(SRCDIR) $(BUILDDIR)/launcher
 
 $(BUILDDIR):
+	mkdir -p $@
+
+$(FILESDIR):
 	mkdir -p $@
 
 $(BUILDDIR)/launcher: $(SRCDIR)/launcher.c $(BUILDDIR)
@@ -11,5 +15,6 @@ $(BUILDDIR)/launcher: $(SRCDIR)/launcher.c $(BUILDDIR)
 
 clean:
 	rm -rf $(BUILDDIR)
+	rm -rf $(FILESDIR)
 
 .PHONY: all clean
