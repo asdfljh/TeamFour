@@ -221,13 +221,11 @@ int jsonParse(char* filePath, char* jsonContents) {
             nameContents = (char*)malloc(nameSize*sizeof(char));
             memcpy(nameContents, jsonContents + t[i+1].start, nameSize - 1);
             nameContents[nameSize-1] = '\0';
-            printf("DEBUG] name: %s\n", nameContents);
         } else if (jsoneq(jsonContents, &t[i], "body") == 0) {
             bodySize = t[i+1].end - t[i+1].start + 1;
             bodyContents = (char*)malloc(bodySize*sizeof(char));
             memcpy(bodyContents, jsonContents + t[i+1].start, bodySize - 1);
             bodyContents[bodySize-1] = '\0';
-            printf("DEBUG] body: %d\n", (int)  bodySize-1);
         }
     }
 
@@ -281,7 +279,6 @@ int verify(char* base64_output){
 
     memset(cmdline, 0, sizeof(cmdline));
     sprintf(cmdline, "base64 --decode %s > %s", base64_output, gpg_output);
-    printf("DEBUG] %s\n", cmdline);
     fp = popen(cmdline, "r");
     if(fp == NULL) { // ERROR
         perror("base64 error");
