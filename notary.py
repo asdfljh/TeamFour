@@ -120,7 +120,7 @@ def send_file_with_sign(c, gpg, address):
     TEXT = "{\"name\": \"" + NAME + "\",\"body\": \"" + file_b64encode + "\"    }"
 
 
-    filesize = struct.pack("<Q",size(TEXT))
+    filesize = struct.pack("<Q",len(TEXT))
     c.send(filesize)   # Send File size first
 
     Success = -1
@@ -182,7 +182,7 @@ def authuser(c,path):
         return -1
     # Generate a big random bits, sign and encrypt it.
     number = random.getrandbits(512)
-    encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "")
+    encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "notary897")
     c.sendall(str(encrypted_data))
     authrandom = c.recv(2048)
 
@@ -195,7 +195,7 @@ def authuser(c,path):
     # Verifies a message from Client
     key_data2 = open(path+filename).read()
     import_result = gpgauth.import_keys(key_data2)
-    verified = gpgauth.decrypt(authrandom, passphrase="")
+    verified = gpgauth.decrypt(authrandom, passphrase="notary897")
 
     if not verified.ok :
         print(verified.status)
