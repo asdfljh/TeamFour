@@ -116,7 +116,7 @@ def send_file_with_sign(c, gpg, address):
     tm = datetime.now()
     timestring = str(tm.year)+"_"+str(tm.month)+"_"+str(tm.hour)+"_"+str(tm.    minute)+"_"+str(tm.microsecond)
     NAME = "FROM_"+str(address)+"_"+timestring
-    file_b64encode = base64.b64encode(_file.read())
+    file_b64encode = base64.b64encode(sign_file.read())
     TEXT = "{\"name\": \"" + NAME + "\",\"body\": \"" + file_b64encode + "\"    }"
 
 
@@ -154,7 +154,7 @@ def Isexecutable():
 
 
 def file_is_executable(gpg):
-    IP = '127.0.0.2'     # Designated local host
+    IP = ''     # Designated local host
     port = 8001
 
     try:
