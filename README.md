@@ -54,7 +54,8 @@ B. If C succeeds to authenticate, Notary program gets a signed file from client.
         
     2. N verifies sign(also extracts a plain file) and signs it with N's private Key
     
-    3.  N encodes signed file with base64 and sends it as the json-based bytes to C   
+    3. N encodes signed file with base64 and sends it as the json-based bytes to C       
+    
 
 ### Launcher Program
 
@@ -98,3 +99,10 @@ A. Launcher program gets bytes of json format
 
 2. Flag updater program is written in C and uses a Python script to decode the  base 64 signature
 
+3. Notary uses JSON format below:
+```bash
+   {   
+   "name": "FROM_[CLIENT-IP]_[YEAR]_[MONTH]_[HOUR]_[MIN]_[Microsecond]",
+   "body": "[base64 encoded program executable]"
+   }
+```
