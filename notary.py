@@ -141,44 +141,6 @@ def send_file_with_sign(c, gpg, address):
 
     return Success
 
-
-def Isexecutable():
-    # This fuction checks the file is executable or not
-    de_file = open('./Download/temp_clear')
-    if (magic.from_buffer(de_file.read())[:3] != 'ELF' ):
-        print('Not Executable')
-        de_file.close()
-        return -1
-    de_file.close()
-    return 1
-
-
-def file_is_executable(gpg):
-    IP = ''     # Designated local host
-    port = 8001
-
-    try:
-        print("connect..")
-        s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        s.connect((IP, port))
-
-    except socket.error,e :
-        logging.exception("Socket error")
-        return -1
-
-    try:
-        print ('Sending Executable....')
-        stream = TEXT
-        s.send(stream)
-
-    except:
-        logging.exception("Unexpected error, file transmission failed")
-        return -1
-
-
-    return 1
-
-
 def loggingconfig():
 
 # Initiate Logging handler
@@ -301,16 +263,7 @@ def main(argv):
         print ('4. Sign and Send')
         connect.close()
 
-        return
-
-# Below comments are about communication with our Launcher
-# Is this necessary?
-'''
-        if Isexecutable() > 0:
-            if file_is_executable(gpg) < 0:
-                continue
     return
-'''
 
 if __name__ == "__main__":
     main(sys.argv)
