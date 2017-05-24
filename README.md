@@ -1,20 +1,20 @@
-# TeamFour - Notary Program
-
-# Install & Usage    
+TeamFour - Notary Program
+=========================
+## Install & Usage    
     
-To install python dependencies, follow:
+### To install python dependencies, follow:
     
 ```bash
 (sudo) ./install.sh
 ```
 
-To build flag-updater :
+### To build flag-updater :
    
 ```bash
 (sudo) make
 ```
 
-Usage
+### Usage
     
     Execution Order : Server -> Launcher -> Client
 
@@ -26,7 +26,10 @@ Usage
 
     Flag-Updater : ./flagUpdater/flag_updater    
 
-# Protocol
+## Protocol
+
+### Notary Program
+
 A. Before start getting a file, Notary Program authenticate the user using PGP keys.
 
     1. N(Notary) asks client's github ID
@@ -43,8 +46,7 @@ A. Before start getting a file, Notary Program authenticate the user using PGP k
     
     7. C encrypts the random number with the server's public key and send the encrypted message back to the server.
     
-    8. N verifies the encrypted message.
-        
+    8. N verifies the encrypted message.        
 
 B. If C succeeds to authenticate, Notary program gets a signed file from client.
 
@@ -52,15 +54,13 @@ B. If C succeeds to authenticate, Notary program gets a signed file from client.
         
     2. N verifies sign(also extracts a plain file) and signs it with N's private Key
     
-    3. N sends signed file to C
-    
-C. N sends a json format bytes to L(Launcher)
+    3.  N encodes signed file with base64 and sends it as the json-based bytes to C   
 
-    1. If the file is Executable, N encodes signed file with base64 and sends it as the json-based bytes to L(Launcher).    
+### Launcher Program
 
-D. Launcher program gets bytes of json format.
+A. Launcher program gets bytes of json format
 
-    1. L(Launcher) gets json-based bytes from N.
+    1. L(Launcher) gets json-based bytes from C.
 
     2. L checks the json-based bytes are right format.
     
@@ -76,7 +76,9 @@ D. Launcher program gets bytes of json format.
 
     8. If executing file calls 'execve', L terminates it.
 
- E. Flag Updater receives JSON file and verifies their signature and content
+### Flag Updater
+
+ A. Flag Updater receives JSON file and verifies their signature and content
 
     1. The program is daemonized to be runed in background
 
@@ -90,7 +92,7 @@ D. Launcher program gets bytes of json format.
 
     6. The informations of the gpg file are checked on order to see if the signature is good
 
-# Misc
+## Misc
 
 1. Notary program is written in Python 2.X
 
