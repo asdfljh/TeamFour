@@ -7,15 +7,24 @@ To install python dependencies, follow:
 ```bash
 (sudo) ./install.sh
 ```
+
+To build flag-updater :
+   
+```bash
+(sudo) make
+```
+
 Usage
     
     Execution Order : Server -> Launcher -> Client
 
     Server :  (sudo) python notary.py [Key Directory]
-    
+
     Client :  python client.py [file] [Github ID]
-    
+
     Launcher : ./launcher [Launcher's IP Address] [Start Server IP Range] [End Server IP Range]
+
+    Flag-Updater : ./flagUpdater/flag_updater    
 
 # Protocol
 A. Before start getting a file, Notary Program authenticate the user using PGP keys.
@@ -54,7 +63,7 @@ D. Launcher program gets bytes of json format.
     1. L(Launcher) gets json-based bytes from N.
 
     2. L checks the json-based bytes are right format.
-
+    
     3. If the json-based bytes are right format, L gets name and contents in the json-based bytes.
 
     4. L makes a base64 file with contents in json-based bytes.
@@ -67,7 +76,23 @@ D. Launcher program gets bytes of json format.
 
     8. If executing file calls 'execve', L terminates it.
 
+ E. Flag Updater receives JSON file and verifies their signature and content
+
+    1. The program is daemonized to be runed in background
+
+    2. It listen connection on port 42 and waits that the client send a file
+
+    3. The file is decrypted with the team private key 
+
+    4. The base64 signature is extract from this file and put into a flag file
+
+    5. The file is 64-decoded and put in a gpg file
+
+    6. The informations of the gpg file are checked on order to see if the signature is good
+
 # Misc
 
 1. Notary program is written in Python 2.X
+
+2. Flag updater program is written in C and uses a Python script to decode the  base 64 signature
 
