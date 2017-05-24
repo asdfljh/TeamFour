@@ -287,23 +287,20 @@ int verify(char* base64_output){
         return -1;
     }
 
-    fgets(buff, sizeof(buff), fp);
-    //printf("buff: %s\n", buff);
-
-	int idx = 0;
-	int result = 0;
+    int idx = 0;
+    int result = 0;
     char* good = "gpg: Good signature from \"IS521_notary <IS521_notary@kaist.ac.kr>\"";
-	while(fgets(buff, sizeof(buff), fp) != NULL){
+    while(fgets(buff, sizeof(buff), fp) != NULL){
         int i;
         int flag = 1;
-	    for(i = 0 ; i < strlen(good) ; i++){
-	        if(buff[i] != good[i]){
-	            flag = 0;
+        for(i = 0 ; i < strlen(good) ; i++){
+            if(buff[i] != good[i]){
+                flag = 0;
             }
-	    }
+        }
         result = result | flag; 
-	    printf(">> %s", buff);
-	}
+        printf(">> %s", buff);
+    }
     pclose(fp);
 
     /* give permission to execute */
