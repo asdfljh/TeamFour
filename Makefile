@@ -6,6 +6,7 @@ SRCDIR = src
 all: flagUpdater/flag_updater $(LAUNCHERDIR)/$(FILESDIR) $(LAUNCHERDIR)/$(BUILDDIR) $(LAUNCHERDIR)/$(SRCDIR) $(LAUNCHERDIR)/$(BUILDDIR)/launcher
 	sudo mkdir -p /var/ctf/
 	sudo chmod 777 /var/ctf/
+	sudo apt-get install python-gnupg
 
 $(LAUNCHERDIR)/$(BUILDDIR):
 	mkdir -p $@
