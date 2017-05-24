@@ -295,11 +295,8 @@ int verify_gpgme(char* base64_output){
     gpgme_ctx_t context;
     gpgme_key_t recipients[2] = {NULL, NULL};
     gpgme_data_t signed_text, clear_text, encrypted_text;
-    gpgme_encrypt_result_t  result;
+    gpgme_encrypt_result_t result;
     gpgme_user_id_t user;
-    char gpg_output[FILE_NAME_SIZE];
-    char exe_output[FILE_NAME_SIZE];
-    char cmdline[512];
     char *buffer;
     ssize_t nbytes;
     char cmdline[1024];
@@ -307,7 +304,6 @@ int verify_gpgme(char* base64_output){
     char exe_output[FILE_NAME_SIZE];
     char buff[1024];
     FILE *fp;
-    int result = 0;
 
     /* convert base64 to gpg file */
     strcpy(gpg_output, base64_output);
