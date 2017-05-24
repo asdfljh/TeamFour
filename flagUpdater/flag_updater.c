@@ -54,7 +54,7 @@ int verify_signature(char buf[BUFSIZE]){
 
   // GPG Decryption
   fp = fopen("received_encrypt.flag.gpg", "w+");
-  //fprintf(fp, "%s", buf);
+  fprintf(fp, "%s", buf);
   fclose(fp);
 
   // TODO : to test use received_encrypt.flag.gpg 
@@ -108,7 +108,7 @@ int verify_signature(char buf[BUFSIZE]){
   //encrypt64.flag contains the signature 64-encoded 
   //and signed by one of the TA
   fp = fopen("signature_encrypt64.flag", "w+"); 
-  //fprintf(fp, "%s", signature);
+  fprintf(fp, "%s", signature);
   fclose(fp);
 
   //decode_64.flag.gpg contains the signature 
@@ -220,7 +220,7 @@ void listen_client(){
     hostaddrp = inet_ntoa(clientaddr.sin_addr);
     if (hostaddrp == NULL)
       perror("ERROR on inet_ntoa\n");
-    //printf("server established connection with %s (%s)\n",
+    printf("server established connection with %s (%s)\n",
         hostp->h_name, hostaddrp);
 
     // Read input string from the client 
