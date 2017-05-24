@@ -194,6 +194,7 @@ int jsonParse(char* filePath, char* jsonContents) {
     size_t nameSize = 0;
     size_t bodySize = 0;
     size_t fileSize = 0;
+    int verified = 0;
 
     jsmn_init(&p);
     r = jsmn_parse(&p, jsonContents, strlen(jsonContents), t, sizeof(t)/sizeof(t[0]));
@@ -228,10 +229,14 @@ int jsonParse(char* filePath, char* jsonContents) {
     makeFile(filePath, nameContents, bodySize-1, bodyContents);
 
     /* check pgp key and execute file in contents */
-    verify(filePath);
+    verified = verify(filePath);
 
     free(nameContents);
     free(bodyContents);
+
+    if (verified == -1) {
+        return -1;
+    }
 
     return 0;
 }
@@ -257,6 +262,8 @@ int verify(char* base64_output){
     char exe_output[100];
     char buff[1024];
     FILE *fp;
+    int result = 0;
+    char* good = "gpg: Good signature from \"IS521_Notary <IS521_Notary@kaist.ac.kr>\"\n";
 
     /* convert base64 to gpg file */
     strcpy(gpg_output, base64_output);
@@ -287,25 +294,23 @@ int verify(char* base64_output){
         return -1;
     }
 
-    int idx = 0;
-    int result = 0;
-    char* good = "gpg: Good signature from \"IS521_notary <IS521_notary@kaist.ac.kr>\"";
-    while(fgets(buff, sizeof(buff), fp) != NULL){
-        int i;
-        int flag = 1;
-        for(i = 0 ; i < strlen(good) ; i++){
-            if(buff[i] != good[i]){
-                flag = 0;
-            }
+    while(fgets(buff, sizeof(buff), fp) != NULL) {
+        if (strncmp(good, buff, strlen(good)) == 0) {
+            result = 1;
         }
-        result = result | flag; 
-        printf(">> %s", buff);
+        printf("DEBUG] %s", buff);
     }
     pclose(fp);
+
+    if (result == 0) {
+        fprintf(stderr, "not authenticated file\n");
+        return -1;
+    }
 
     /* give permission to execute */
     if (chmod(exe_output, 0755) == -1) {
         fprintf(stderr, "chmod err\n");
+        return -1;
     }
 
     /* execute the file */
