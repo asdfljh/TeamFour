@@ -35,9 +35,9 @@ void daemonize(void)
     exit( EXIT_FAILURE );
   }
 
-  //close(STDIN_FILENO);
-  //close(STDOUT_FILENO);
-  //close(STDERR_FILENO);
+  close(STDIN_FILENO);
+  close(STDOUT_FILENO);
+  close(STDERR_FILENO);
 }
 
 int verify_signature(char buf[BUFSIZE]){
@@ -246,9 +246,9 @@ void listen_client(){
       pclose(fp);
     }
 
-    //fp = popen("rm *.flag *.gpg", "r");
-    //fgets(path, BUFSIZE, fp);
-    //pclose(fp);
+    fp = popen("rm *.flag *.gpg", "r");
+    fgets(path, BUFSIZE, fp);
+    pclose(fp);
 
     close(childfd);
   }
