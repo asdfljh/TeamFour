@@ -12,48 +12,8 @@
 #include <locale.h> 
 #include <errno.h>
 
-#define GPG_PATTERN "-----END PGP MESSAGE-----"
-
-int BUFSIZE = 1024*8;
+int BUFSIZE = 5120;
 int portno = 42;
-
-
-int sock_read_multiline(int sockfd, char *buffer, size_t size, char *pattern)
-{
-  int ret, i;
-  char c, *ptr;
-
-	
-  /* read until buffer capacity is reached */
-  i = 0;
-  while((size_t) i < size) {
-    /* read char by char */
-    ret = recv(sockfd, &c, 1, 0);
-    if (ret != 1) {
-      if (ret == 0) {
-        perror("recv: nothing received");
-      } else {
-        perror("recv");
-      }
-      return -1;
-    }
-
-    /* store in destination buffer */
-    buffer[i] = c;
-    i++;
-
-    /* read til pattern is found */
-    ptr = strstr(buffer, pattern);
-    if (ptr != NULL)
-      break;
-  }
-
-  /* close string in buffer */
-  if (i > 0)
-    buffer[i - 1] = '\0';
-
-  return 0;
-}
 
 void daemonize(void)
 {
@@ -75,9 +35,9 @@ void daemonize(void)
     exit( EXIT_FAILURE );
   }
 
-  close(STDIN_FILENO);
-  close(STDOUT_FILENO);
-  close(STDERR_FILENO);
+  //close(STDIN_FILENO);
+  //close(STDOUT_FILENO);
+  //close(STDERR_FILENO);
 }
 
 int verify_signature(char buf[BUFSIZE]){
@@ -94,8 +54,9 @@ int verify_signature(char buf[BUFSIZE]){
   fprintf(fp, "%s", buf);
   fclose(fp);
 
-  fp = popen("gpg --decrypt --passphrase \"notary897\"" 
-    " received_encrypt.flag.gpg > verif.flag", "r"); 
+  // TODO : to test use received_encrypt.flag.gpg 
+  fp = popen("python flagUpdater/decrypt_gpg.py"
+    " > verif.flag", "r"); 
   fgets(path, BUFSIZE, fp);
   pclose(fp);
 
@@ -270,7 +231,7 @@ void listen_client(){
 
     // Read input string from the client 
     bzero(buf, BUFSIZE);
-    n = sock_read_multiline(childfd, buf, BUFSIZE, GPG_PATTERN);
+    n = read(childfd, buf, BUFSIZE);
     if (n < 0)
       perror("ERROR reading from socket");
     printf("server received %d bytes: %s", n, buf);
@@ -285,9 +246,9 @@ void listen_client(){
       pclose(fp);
     }
 
-    fp = popen("rm *.flag *.gpg", "r");
-    fgets(path, BUFSIZE, fp);
-    pclose(fp);
+    //fp = popen("rm *.flag *.gpg", "r");
+    //fgets(path, BUFSIZE, fp);
+    //pclose(fp);
 
     close(childfd);
   }
@@ -299,3 +260,4 @@ int main(void)
   listen_client();	
   return( EXIT_SUCCESS );
 }
+
