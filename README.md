@@ -63,33 +63,32 @@ D. Launcher program gets bytes of json format.
     1. L(Launcher) gets json-based bytes from N.
 
     2. L checks the json-based bytes are right format.
+    
+    3. If the json-based bytes are right format, L gets name and contents in the json-based bytes.
 
-    3. If the json-based bytes are right format, L gets name and contents in the json-based bytes.
+    4. L makes a base64 file with contents in json-based bytes.
 
-    4. L makes a base64 file with contents in json-based bytes.
+    5. L decrypts the base64 file and gets the gpg file.
 
-    5. L decrypts the base64 file and gets the gpg file.
+    6. L verifies the gpg file with L's public key.
 
-    6. L verifies the gpg file with L's public key.
-
-    7. If it is verfied, L executes the file.
+    7. If it is verfied, L executes the file.
 
     8. If executing file calls 'execve', L terminates it.
-    
+
  E. Flag Updater receives JSON file and verifies their signature and content
- 
-    1. The program is daemonized to be runed in background
-    
-    2. It listen connection on port 42 and waits that the client send a file
-    
-    3. The file is decrypted with the team private key 
-    
-    4. The base64 signature is extract from this file and put into a flag file
-    
-    5. The file is 64-decoded and put in a gpg file
-    
-    6. The informations of the gpg file are checked on order to see if the signature is good
-   
+
+    1. The program is daemonized to be runed in background
+
+    2. It listen connection on port 42 and waits that the client send a file
+
+    3. The file is decrypted with the team private key 
+
+    4. The base64 signature is extract from this file and put into a flag file
+
+    5. The file is 64-decoded and put in a gpg file
+
+    6. The informations of the gpg file are checked on order to see if the signature is good
 
 # Misc
 
