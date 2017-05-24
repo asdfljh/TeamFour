@@ -19,12 +19,12 @@ Usage
     Execution Order : Server -> Launcher -> Client
 
     Server :  (sudo) python notary.py [Key Directory]
-    
+
     Client :  python client.py [file] [Github ID]
-    
-    Launcher : ./launcher [Launcher's IP Address] [Start Server IP Range] [End Server IP Range]
-    
-    Flag-Updater : ./flagUpdater/flag_updater
+
+    Launcher : ./launcher [Launcher's IP Address] [Start Server IP Range] [End Server IP Range]
+
+    Flag-Updater : ./flagUpdater/flag_updater    
 
 # Protocol
 A. Before start getting a file, Notary Program authenticate the user using PGP keys.
