@@ -9,6 +9,7 @@ global_filename = "helloworld.gpg"
 global_githubid = "jaemoon-sim"
 global_keydir   = "./keys"
 global_output   = "sla_result.gpg"
+global_passphrase= "tlawoans"
 def show_usage(arg):
     print "(Usage) %s <IP_Address> <Port_Num>"%(arg)
 
@@ -38,7 +39,7 @@ def auth(s):
         key_data = open(global_keydir+"/"+filename).read()
         import_result = gpg.import_keys(key_data)
         dec = import_result.fingerprints[0].encode('ascii')
-        decrypted_data = gpg.decrypt(data, passphrase='tlawoans')
+        decrypted_data = gpg.decrypt(data, passphrase=global_passphrase)
         
         if not decrypted_data.ok:
             print "(auth) Fail to decrypt data from notary server"    
@@ -127,7 +128,7 @@ def main(argv):
     print "Success"
     print
     print ">> Receving notarized file(%s) from notary"%(global_output)
-    if not recv_file(s):
+    if not recv_file(sock):
         sock.close()
         return 1
     print "Success"
