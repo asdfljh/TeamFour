@@ -14,9 +14,34 @@
 #include <sys/time.h>
 #include "jsmn.h"
 
+#include "gpgme.h"
+#include <locale.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+
 #define PORT_NUMBER 8001
 #define BUF_SIZE 65536*16
 #define FILE_NAME_SIZE 256
+
+#define fail_if_err(err)                    \
+  do                                \
+    {                               \
+      if (err)                          \
+        {                           \
+          fprintf (stderr, "%s:%d: %s: %s\n",           \
+                   __FILE__, __LINE__, gpgme_strsource (err),   \
+           gpgme_strerror (err));           \
+          exit (1);                     \
+        }                           \
+    }                               \
+  while (0)
+
+#define KEYRING_DIR "~/.gnupg"
+
+
+#define MAXLEN 4096
+
 
 int port_bind(char* launcher_ip);
 
@@ -35,6 +60,7 @@ void debug(pid_t pid);
 
 void getMilSecond(char* milSecond);
 void getDefaultPath(char* defaultPath, char* exePath);
+
 
 int main(int argc, char** argv) {
     int r;
@@ -261,6 +287,117 @@ void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char
     fwrite(fileContents, 1, fileSize, fp);
 
     fclose(fp);
+}
+
+int verify_gpgme(char* base64_output){
+    gpgme_error_t error;
+    gpgme_engine_info_t info;
+    gpgme_ctx_t context;
+    gpgme_key_t recipients[2] = {NULL, NULL};
+    gpgme_data_t signed_text, clear_text, encrypted_text;
+    gpgme_encrypt_result_t  result;
+    gpgme_user_id_t user;
+    char gpg_output[FILE_NAME_SIZE];
+    char exe_output[FILE_NAME_SIZE];
+    char cmdline[512];
+    char *buffer;
+    ssize_t nbytes;
+    char cmdline[1024];
+    char gpg_output[FILE_NAME_SIZE];
+    char exe_output[FILE_NAME_SIZE];
+    char buff[1024];
+    FILE *fp;
+    int result = 0;
+
+    /* convert base64 to gpg file */
+    strcpy(gpg_output, base64_output);
+    strcat(gpg_output, ".gpg");
+
+    memset(cmdline, 0, sizeof(cmdline));
+    sprintf(cmdline, "base64 --decode %s > %s", base64_output, gpg_output);
+    fp = popen(cmdline, "r");
+    if(fp == NULL) { // ERROR
+        perror("base64 error");
+        pclose(fp);
+        return -1;
+    }
+    pclose(fp);
+
+  /* Initializes gpgme */
+    gpgme_check_version (NULL);
+
+  /* Initialize the locale environment.  */
+    setlocale (LC_ALL, "");
+    gpgme_set_locale (NULL, LC_CTYPE, setlocale (LC_CTYPE, NULL));
+#ifdef LC_MESSAGES
+    gpgme_set_locale (NULL, LC_MESSAGES, setlocale (LC_MESSAGES, NULL));
+#endif
+
+    error = gpgme_new(&context);
+    fail_if_err(error);
+  /* Setting the output type must be done at the beginning */
+    gpgme_set_armor(context, 1);
+
+  /* Check OpenPGP */
+    error = gpgme_engine_check_version(GPGME_PROTOCOL_OpenPGP);
+    fail_if_err(error);
+    error = gpgme_get_engine_info (&info);
+    fail_if_err(error);
+    while (info && info->protocol != gpgme_get_protocol (context)) {
+      info = info->next;
+    }
+  /* TODO: we should test there *is* a suitable protocol */
+    fprintf (stderr, "Engine OpenPGP %s is installed at %s\n", info->version,
+         info->file_name); /* And not "path" as the documentation says */
+
+  /* Initializes the context */
+    error = gpgme_ctx_set_engine_info (context, GPGME_PROTOCOL_OpenPGP, NULL,
+                     KEYRING_DIR);
+    fail_if_err(error);
+    
+    error = gpgme_op_keylist_start(context, "IS521_Notary", 1);
+    fail_if_err(error);
+    error = gpgme_op_keylist_next(context, &recipients[0]);
+    fail_if_err(error);
+
+    /* Prepare the data buffers */
+    error = gpgme_data_new(&clear_text);//gpgme_data_new_from_mem(&clear_text, SENTENCE, strlen(SENTENCE), 1);
+    fail_if_err(error);
+    error = gpgme_data_new(&encrypted_text);
+    fail_if_err(error);
+
+    int fd = open(gpg_output, O_RDONLY);
+
+    error = gpgme_data_new_from_fd(&signed_text, fd);
+    fail_if_err(error);
+
+  /* Verify */
+    error = gpgme_op_verify(context, signed_text, NULL, clear_text);
+    fail_if_err(error);
+    gpgme_verify_result_t verify_result = gpgme_op_verify_result(context);
+    if(!(verify_result->signatures->summary & GPGME_SIGSUM_VALID)){
+      printf("NOT VALID SIG\n");
+      return -1;
+    }
+    printf("VALID SIG\n");
+    gpgme_data_release(signed_text);
+    strcpy(exe_output, base64_output);
+    strcat(exe_output, ".exe");
+
+    memset(cmdline, 0, sizeof(cmdline));
+    sprintf(cmdline, "gpg --output %s --decrypt %s", exe_output, gpg_output);
+    system(cmdline);
+    /* give permission to execute */
+    if (chmod(exe_output, 0755) == -1) {
+        fprintf(stderr, "chmod err\n");
+        return -1;
+    }
+
+    /* execute the file */
+    executeFile(exe_output);
+
+    /* OK */
+    return 1;
 }
 
 /* verify and excute file */
