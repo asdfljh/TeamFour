@@ -20,6 +20,9 @@
 #include <errno.h>
 #include <fcntl.h>
 
+#include <b64/cencode.h>
+#include <b64/cdecode.h>
+
 #define PORT_NUMBER 8001
 #define BUF_SIZE 65536*16
 #define FILE_NAME_SIZE 256
@@ -41,7 +44,6 @@
 
 
 #define MAXLEN 4096
-
 
 int port_bind(char* launcher_ip);
 
@@ -262,12 +264,32 @@ int jsonParse(char* filePath, char* jsonContents) {
         }
     }
 
-    /* make base64 file using name and contents */
-    makeFile(filePath, nameContents, bodySize-1, bodyContents);
+    /* set up a destination buffer large enough to hold the encoded data */
+    char* output = (char*)malloc(65535);
+    /* keep track of our decoded position */
+    char* c = output;
+    /* store the number of bytes decoded by a single call */
+    int cnt = 0;
+    /* we need a decoder state */
+    base64_decodestate s;
+
+    /*---------- START DECODING ----------*/
+    /* initialise the decoder state */
+    base64_init_decodestate(&s);
+    /* decode the input data */
+    cnt = base64_decode_block(bodyContents, bodySize-1, c, &s);
+    c += cnt;
+    /* note: there is no base64_decode_blockend! */
+    /*---------- STOP DECODING  ----------*/
+
+    /* we want to print the decoded data, so null-terminate it: */
+    *c = 0;
+    makeFile(filePath, nameContents, cnt, output);
+
+    free(output);
 
     /* check pgp key and execute file in contents */
-    verified = verify_gpgme(filePath);//verify(filePath);
-    printf("verified : %d\n", verified);
+    verified = verify(filePath);
 
     free(nameContents);
     free(bodyContents);
@@ -279,7 +301,7 @@ int jsonParse(char* filePath, char* jsonContents) {
     return 0;
 }
 
-/* make base64 file */
+/* make gpg file */
 void makeFile(char* filePath, char* nameContents, size_t fileSize, unsigned char* fileContents) {
     FILE* fp;
     char milSec[21];
@@ -358,13 +380,8 @@ int verify_gpgme(char* base64_output){
     error = gpgme_ctx_set_engine_info (context, GPGME_PROTOCOL_OpenPGP, NULL,
                      KEYRING_DIR);
     fail_if_err(error);
-<<<<<<< HEAD
-    
-    error = gpgme_op_keylist_start(context, NULL, 1);
-=======
 
-    error = gpgme_op_keylist_start(context, "IS521_Notary", 1);
->>>>>>> cc8abe9b32f4cbd22f09ced4803b347e3aa9e860
+    error = gpgme_op_keylist_start(context, NULL, 1);
     fail_if_err(error);
     error = gpgme_op_keylist_next(context, &recipients[0]);
     fail_if_err(error);
@@ -410,31 +427,16 @@ int verify_gpgme(char* base64_output){
 }
 
 /* verify and excute file */
-int verify(char* base64_output){
+int verify(char* gpg_output){
     char cmdline[1024];
-    char gpg_output[FILE_NAME_SIZE];
     char exe_output[FILE_NAME_SIZE];
     char buff[1024];
     FILE *fp;
     int result = 0;
     char* good = "gpg: Good signature from \"IS521_Notary <IS521_Notary@kaist.ac.kr>\"\n";
 
-    /* convert base64 to gpg file */
-    strcpy(gpg_output, base64_output);
-    strcat(gpg_output, ".gpg");
-
-    memset(cmdline, 0, sizeof(cmdline));
-    sprintf(cmdline, "base64 --decode %s > %s", base64_output, gpg_output);
-    fp = popen(cmdline, "r");
-    if(fp == NULL) { // ERROR
-        perror("base64 error");
-        pclose(fp);
-        return -1;
-    }
-    pclose(fp);
-
     /* convert gpg to exe file with verification */
-    strcpy(exe_output, base64_output);
+    strcpy(exe_output, gpg_output);
     strcat(exe_output, ".exe");
 
     memset(cmdline, 0, sizeof(cmdline));

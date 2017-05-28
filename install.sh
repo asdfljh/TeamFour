@@ -7,3 +7,4 @@ pip install python-gnupg
 mkdir /var/log/notary/
 rm get-pip.py
 apt-get install -y libgpgme11-dev
+apt-get install libb64-dev
