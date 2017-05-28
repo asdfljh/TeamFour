@@ -6,4 +6,4 @@ pip install python-magic
 pip install python-gnupg
 mkdir /var/log/notary/
 rm get-pip.py
-sudo apt-get install -y libgpgme11-dev
+apt-get install -y libgpgme11-dev
