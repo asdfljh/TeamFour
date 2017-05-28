@@ -100,7 +100,7 @@ def send_file_with_sign(c, gpg, address):
     decrypt = gpg.decrypt(en_file.read()).data
     de_file.write(decrypt)
     # We sign the decrypted file with our private key
-    sign = gpg.sign(decrypt,passphrase = "notary897",output = "./Download/temp.gpg")
+    sign = gpg.sign(decrypt,passphrase = "qwer1234",output = "./Download/temp.gpg")
     sign_file = open('./Download/temp.gpg') # Signed file
     # Below functions are about JSON format.
     # JSON format is:
@@ -182,7 +182,7 @@ def authuser(c,path):
         return -1
     # Generate a big random bits, sign and encrypt it.
     number = random.getrandbits(512)
-    encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "notary897")
+    encrypted_data = gpgauth.encrypt(str(number), public, sign=private, passphrase = "qwer1234")
     c.sendall(str(encrypted_data))
     authrandom = c.recv(2048)
 
@@ -195,7 +195,7 @@ def authuser(c,path):
     # Verifies a message from Client
     key_data2 = open(path+filename).read()
     import_result = gpgauth.import_keys(key_data2)
-    verified = gpgauth.decrypt(authrandom, passphrase="notary897")
+    verified = gpgauth.decrypt(authrandom, passphrase="qwer1234")
 
     if not verified.ok :
         print(verified.status)
