@@ -352,7 +352,7 @@ int verify_gpgme(char* base64_output){
                      KEYRING_DIR);
     fail_if_err(error);
     
-    error = gpgme_op_keylist_start(context, "Jaemoon Sim", 1);
+    error = gpgme_op_keylist_start(context, NULL, 1);
     fail_if_err(error);
     error = gpgme_op_keylist_next(context, &recipients[0]);
     fail_if_err(error);
