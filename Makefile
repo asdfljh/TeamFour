@@ -15,7 +15,7 @@ $(LAUNCHERDIR)/$(FILESDIR):
 	mkdir -p $@
 
 $(LAUNCHERDIR)/$(BUILDDIR)/launcher: $(LAUNCHERDIR)/$(SRCDIR)/launcher.c $(LAUNCHERDIR)/$(BUILDDIR)
-	$(CC) -D_FILE_OFFSET_BITS=64 -lgpgme -lassuan -lgpg-error $(LAUNCHERDIR)/$(SRCDIR)/base64.c $(LAUNCHERDIR)/$(SRCDIR)/jsmn.c -o$@ $<
+	$(CC) -D_FILE_OFFSET_BITS=64 -lgpgme -lassuan -lgpg-error $(LAUNCHERDIR)/$(SRCDIR)/jsmn.c -o$@ $<
 
 flagUpdater/flag_updater :  
 	gcc flagUpdater/flag_updater.c -o flagUpdater/flag_updater 
