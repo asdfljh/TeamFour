@@ -126,6 +126,13 @@ int main(int argc, char** argv) {
 
         if (jsonParse(filePath, buffer) == 0) {
             printf("DEBUG] Client: %s\n", filePath);
+            memset(buffer, 0, BUF_SIZE);
+            strcpy(buffer, "Success");
+            write(client_socket, buffer, strlen(buffer));
+        } else {
+            memset(buffer, 0, BUF_SIZE);
+            strcpy(buffer, "Fail");
+            write(client_socket, buffer, strlen(buffer));
         }
 
         close(client_socket);
@@ -209,7 +216,7 @@ int check_range(char* start_ip, char* end_ip, char* object_ip) {
 
 /* parsing json's content name */
 int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
-    if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start && 
+    if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
         strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
         return 0;
     }
@@ -351,8 +358,13 @@ int verify_gpgme(char* base64_output){
     error = gpgme_ctx_set_engine_info (context, GPGME_PROTOCOL_OpenPGP, NULL,
                      KEYRING_DIR);
     fail_if_err(error);
+<<<<<<< HEAD
     
     error = gpgme_op_keylist_start(context, NULL, 1);
+=======
+
+    error = gpgme_op_keylist_start(context, "IS521_Notary", 1);
+>>>>>>> cc8abe9b32f4cbd22f09ced4803b347e3aa9e860
     fail_if_err(error);
     error = gpgme_op_keylist_next(context, &recipients[0]);
     fail_if_err(error);
@@ -498,7 +510,7 @@ void debug(pid_t pid) {
         }
         ptrace(PTRACE_SYSCALL, pid, 0, 0);
         waitpid(pid, &status, 0);
-    }	
+    }
     return;
 }
 
