@@ -259,7 +259,8 @@ int jsonParse(char* filePath, char* jsonContents) {
     makeFile(filePath, nameContents, bodySize-1, bodyContents);
 
     /* check pgp key and execute file in contents */
-    verified = verify(filePath);
+    verified = verify_gpgme(filePath);//verify(filePath);
+    printf("verified : %d\n", verified);
 
     free(nameContents);
     free(bodyContents);
@@ -351,7 +352,7 @@ int verify_gpgme(char* base64_output){
                      KEYRING_DIR);
     fail_if_err(error);
     
-    error = gpgme_op_keylist_start(context, "IS521_Notary", 1);
+    error = gpgme_op_keylist_start(context, "Jaemoon Sim", 1);
     fail_if_err(error);
     error = gpgme_op_keylist_next(context, &recipients[0]);
     fail_if_err(error);
